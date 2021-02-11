@@ -1,5 +1,7 @@
 # Community site prototype
 
+[![Join the chat at https://gitter.im/galaxyproject/hub2](https://badges.gitter.im/galaxyproject/hub2.svg)](https://gitter.im/galaxyproject/hub2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This repository contains the framework - the code that generates the site.
 
 It contains no content. To add content, clone this, then create a `content` directory in the root. All your Markdown files go in there.
