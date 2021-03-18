@@ -14,13 +14,13 @@
         Apply by: {{ article.closes }}
       </span>
     </p>
-    <span v-html="summary" />
+    <p v-html="mdToHtml(article.summary)" />
     <p v-if="article.contact" class="contact">
       Contact: {{ article.contact }}
     </p>
     <p v-if="article.image">
       <a :href="article.external_url">
-        <g-image class="card-img-bottom" :src="article.image.replace('/src', '')" />
+        <g-image class="card-img-bottom" :src="article.image.replace('/src','')" />
       </a>
     </p>
   </div>
@@ -28,24 +28,15 @@
 
 <script>
 import Continent from '@/components/Continent';
-const remark = require('remark');
-const remarkHtml = require('remark-html');
+import { mdToHtml } from '~/utils.js';
 export default {
   components: {
     Continent,
   },
   props: ["article"],
-  data() {
-    let data = {};
-    remark().use(remarkHtml).process(this.article.summary, (err, file) => {
-      if (err) {
-        console.error(err);
-      } else {
-        data.summary = String(file);
-      }
-    });
-    return data;
-  }
+  methods: {
+    mdToHtml,
+  },
 };
 </script>
 

@@ -6,25 +6,16 @@
     <td class="server">
       <a :href="platform.url">Server</a>
     </td>
-    <td class="summary" v-html="summary" />
+    <td class="summary" v-html="mdToHtml(platform.summary)" />
   </tr>
 </template>
 
 <script>
-const remark = require('remark');
-const remarkHtml = require('remark-html');
+import { mdToHtml } from '~/utils.js';
 export default {
   props: ["platform"],
-  data() {
-    let data = {};
-    remark().use(remarkHtml).process(this.platform.summary, (err, file) => {
-      if (err) {
-        console.error(err);
-      } else {
-        data.summary = String(file);
-      }
-    });
-    return data;
-  }
+  methods: {
+    mdToHtml,
+  },
 };
 </script>
