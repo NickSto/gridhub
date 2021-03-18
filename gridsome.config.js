@@ -43,13 +43,14 @@ module.exports = {
   templates: {
     Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
     Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
+    Platform: node => logAndReturn("Platform", rmPathPrefix(node.path, 1)),
   },
   // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
   plugins: [
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: 'content/**/index.md',
+        path: ['content/**/index.md', '!content/use/*/index.md'],
         typeName: 'Article',
       }
     },
@@ -58,6 +59,13 @@ module.exports = {
       options: {
         path: ['content/**/*.md', '!content/**/index.md'],
         typeName: 'Insert',
+      }
+    },
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: 'content/use/*/index.md',
+        typeName: 'Platform',
       }
     },
   ],
