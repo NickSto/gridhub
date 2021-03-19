@@ -1,6 +1,7 @@
 // Using the Server API: https://gridsome.org/docs/server-api/
 const fs = require('fs');
 const path = require('path');
+const { imageType } = require('gridsome/lib/graphql/types/image');
 
 const MEDIATED_DIR = "src/mediated-pages";
 const CATEGORIES = new Map([
@@ -28,6 +29,19 @@ function getFilesDeep(rootDir) {
       files = files.concat(descendents);
     } else if (child.isFile()) {
       files.push(childPath);
+    }
+  }
+  return files;
+}
+
+function getFilesShallow(dirPath, excludeExt=null) {
+  let files = [];
+  let children = fs.readdirSync(dirPath, {withFileTypes: true});
+  for (let child of children) {
+    if (child.isFile()) {
+      if (excludeExt === null || path.parse(child.name).ext !== excludeExt) {
+        files.push(child.name);
+      }
     }
   }
   return files;
@@ -72,6 +86,39 @@ function dateToStr(date) {
   return date.toISOString().slice(0,10);
 }
 
+// Based on https://github.com/gridsome/gridsome/issues/292#issuecomment-483347365
+//TODO: Could actually parse the graymatter and add any images from there, no matter where
+//      they're located. Just take anything that looks like a path and check if it exists.
+async function resolveImages(node, args, context, info) {
+  let images = {};
+  let dirPath = path.join(__dirname, node.fileInfo.directory);
+  if (! fs.existsSync(dirPath)) {
+    console.error(`Directory not found: ${dirPath}`);
+    return images;
+  }
+  let files = getFilesShallow(dirPath, excludeExt='.md');
+  for (let file of files) {
+    let imgPath = path.join(dirPath, file);
+    let result;
+    try {
+      result = await context.assets.add(imgPath, args);
+    } catch (error) {
+      console.error(error);
+      continue;
+    }
+    let imgData = {};
+    for (let attr of ['type', 'mimeType', 'src', 'size', 'sizes', 'srcset', 'dataUri']) {
+      imgData[attr] = result[attr];
+    }
+    if (file !== result.name+result.ext) {
+      console.error(`Error: ${file} !== ${result.name+result.ext}`);
+      continue
+    }
+    images[file] = imgData;
+  }
+  return images;
+}
+
 module.exports = function(api) {
   api.loadSource(actions => {
     // Using the Data Store API: https://gridsome.org/docs/data-store-api/
@@ -88,6 +135,22 @@ module.exports = function(api) {
         hasDate: Boolean
       }
     `);
+    actions.addSchemaResolvers({
+      Article: {
+        images: {
+          type: imageType.type,
+          args: imageType.args,
+          resolve: resolveImages,
+        }
+      },
+      Platform: {
+        images: {
+          type: imageType.type,
+          args: imageType.args,
+          resolve: resolveImages,
+        }
+      }
+    });
   });
 
   // Populate the derived fields.

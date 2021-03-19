@@ -50,6 +50,7 @@ query {
         external_url
         contact
         summary
+        images
         image
         path
       }

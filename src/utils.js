@@ -1,6 +1,21 @@
 
 const remark = require('remark');
 const remarkHtml = require('remark-html');
+const util = require('util');
+
+export function getImage(imagePath, images) {
+  if (! imagePath) {
+    return null;
+  }
+  if (startswith(imagePath,"/src/images/")) {
+    return imagePath.substring(4);
+  } else if (startswith(imagePath,"/images/")) {
+    return imagePath;
+  }
+  let fields = imagePath.split("/");
+  let filename = fields[fields.length-1];
+  return images[filename];
+}
 
 export function mdToHtml(md) {
   let rawHtml;
@@ -31,8 +46,45 @@ export function rmSuffix(rawString, suffix) {
   }
 }
 
+export function startswith(string, query) {
+  return string.indexOf(query) === 0;
+}
+
+export function endswith(string, query) {
+  return string.indexOf(query) === string.length - query.length;
+}
+
 export function titlecase(rawString) {
   return rawString.charAt(0).toUpperCase() + rawString.substring(1, rawString.length);
+}
+
+export function spaceTab(rawStr, tabWidth=8) {
+  /** Create the same effect as adding a tab to the string, except use spaces. */
+  let tabStop = tabWidth*(1+Math.floor(rawStr.length/tabWidth));
+  return rawStr.padEnd(tabStop);
+}
+
+export function describeObject(obj, indent='', maxWidth=100) {
+  for (let [name, value] of Object.entries(obj)) {
+    let type = typeof value;
+    let valueStr;
+    if (type === 'string') {
+      valueStr = util.inspect(value);
+    } else if (type === 'number' || type === 'boolean' || value === null) {
+      valueStr = value;
+    } else {
+      valueStr = `(${type})`;
+    }
+    let nameStr = spaceTab(name+':')
+    let rawLine = `${indent}${nameStr}${valueStr}`;
+    let line;
+    if (rawLine.length > maxWidth) {
+      line = rawLine.substring(0,maxWidth-1) + '…';
+    } else {
+      line = rawLine;
+    }
+    console.log(line);
+  }
 }
 
 export function logTree(root, depth, indent) {

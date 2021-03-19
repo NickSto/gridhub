@@ -2,6 +2,8 @@
   <Layout>
     <g-link to="/" class="link"> &larr; Home</g-link>
     <header>
+      <g-image v-if="this.$page.article.image" class="img-fluid main-image"
+        :src="getImage(this.$page.article.image)" />
       <h1 class="title">{{ $page.article.title }}</h1>
       <div class="metadata">
         <p class="subtitle" v-if="$page.article.tease">{{ $page.article.tease }}</p>
@@ -21,6 +23,8 @@ query Article ($path: String!) {
     id
     title
     tease
+    image
+    images
     contact
     date (format: "D MMMM YYYY")
     content
@@ -29,16 +33,28 @@ query Article ($path: String!) {
 </page-query>
 
 <script>
+import { getImage } from '~/utils.js';
 export default {
   metaInfo() {
     return {
       title: this.$page.article.title
+    }
+  },
+  methods: {
+    getImage(imagePath) {
+      return getImage(imagePath, this.$page.article.images);
     }
   }
 }
 </script>
 
 <style scoped>
+.main-image {
+  float: right;
+  margin: 20px 0px 5px 10px;
+  padding: 2px;
+  border: 1px solid #666;
+}
 .title {
   font-size: 28px;
   font-weight: 300;

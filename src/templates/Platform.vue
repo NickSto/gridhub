@@ -6,12 +6,14 @@
     </header>
     <div class="float-right image-box">
       <a :href="$page.platform.url">
-        <g-image class="img-responsive" :src="$page.platform.image.replace(/^\/src/,'')" />
+        <g-image v-if="$page.platform.image" class="img-responsive"
+          :src="getImage($page.platform.image)" />
+        <template v-else>{{ $page.platform.title }}</template>
       </a>
     </div>
     <table class="table table-striped summary">
       <tbody>
-        <tr v-for="platform of $page.platform.platforms" :key="platform.platform_url">
+        <tr v-for="platform of $page.platform.platforms">
           <th>{{ groupNames.get(platform.platform_group) }}:</th>
           <td><a :href="platform.platform_url">{{ platform.platform_text }}</a></td>
         </tr>
@@ -43,6 +45,7 @@ query Platform ($path: String!) {
     title
     url
     image
+    images
     platforms {
       platform_group
       platform_url
@@ -60,7 +63,7 @@ query Platform ($path: String!) {
 </page-query>
 
 <script>
-import { mdToHtml, titlecase } from '~/utils.js';
+import { mdToHtml, titlecase, getImage } from '~/utils.js';
 export default {
   metaInfo() {
     return {
@@ -69,6 +72,9 @@ export default {
   },
   methods: {
     mdToHtml,
+    getImage(imagePath) {
+      return getImage(imagePath, this.$page.platform.images);
+    }
   },
   data() {
     return {
@@ -108,6 +114,9 @@ export default {
   margin: 0px 0px 5px 10px;
   padding: 2px;
   border: 1px solid #ccc;
+}
+.image-box img {
+  max-width: 100%;
 }
 table.summary {
   width: auto;

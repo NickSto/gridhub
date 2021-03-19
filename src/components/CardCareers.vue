@@ -20,7 +20,7 @@
     </p>
     <p v-if="article.image">
       <a :href="article.external_url">
-        <g-image class="card-img-bottom" :src="article.image.replace('/src','')" />
+        <g-image class="card-img-bottom" :src="getImage(article.image)" />
       </a>
     </p>
   </div>
@@ -28,7 +28,7 @@
 
 <script>
 import Continent from '@/components/Continent';
-import { mdToHtml } from '~/utils.js';
+import { mdToHtml, getImage } from '~/utils.js';
 export default {
   components: {
     Continent,
@@ -36,6 +36,9 @@ export default {
   props: ["article"],
   methods: {
     mdToHtml,
+    getImage(imagePath) {
+      return getImage(imagePath, this.article.images);
+    }
   },
 };
 </script>
