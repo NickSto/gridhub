@@ -3,6 +3,18 @@ const remark = require('remark');
 const remarkHtml = require('remark-html');
 const util = require('util');
 
+export function slugify(string) {
+  return string.toLowerCase().replace(/[^\w\d -]/g, '').replace(/[ -]+/g,'-');
+}
+
+export function ensurePrefix(string, char) {
+  if (string.startsWith(char)) {
+    return string;
+  } else {
+    return char+string;
+  }
+}
+
 export function getImage(imagePath, images) {
   if (! imagePath) {
     return null;

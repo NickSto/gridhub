@@ -4,8 +4,56 @@
 // Changes here require a server restart.
 // To restart press CTRL + C in terminal and run `gridsome develop`
 
-const slugify = string => string.toLowerCase().replace(/[^\w\d -]/g, '').replace(/[ -]+/g,'-');
-const ensurePrefix = (string, char) => string.startsWith(char) ? string : char+string;
+const nodePath = require('path');
+
+const COLLECTIONS = new Map([
+  ['Platform', '/use/'],
+]);
+
+function mkTemplates(collections) {
+  let templates = {
+    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
+    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
+  };
+  for (let name of collections.keys()) {
+    templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, 1));
+  }
+  return templates;
+}
+
+function mkPlugins(collections) {
+  // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
+  let plugins = [
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: ['content/**/index.md', '!content/use/*/index.md'],
+        typeName: 'Article',
+      }
+    },
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: ['content/**/*.md', '!content/**/index.md'],
+        typeName: 'Insert',
+      }
+    },
+  ];
+  for (let [name, urlPath] of collections.entries()) {
+    let globPath = nodePath.join('content', urlPath, '*/index.md');
+    plugins[0].options.path.push('!'+globPath);
+    let plugin = {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: globPath,
+        typeName: name,
+      }
+    };
+    plugins.push(plugin);
+  }
+  return plugins;
+}
+
 function rmPathPrefix(path, depth, absolute=null) {
   let inputIsAbsolute = path.startsWith("/");
   if (inputIsAbsolute) {
@@ -22,6 +70,7 @@ function rmPathPrefix(path, depth, absolute=null) {
     return newPath;
   }
 }
+
 function makeFilenamePath(prefix, node) {
   let directory = rmPathPrefix(node.fileInfo.directory, 1, absolute=false);
   let path;
@@ -32,6 +81,7 @@ function makeFilenamePath(prefix, node) {
   }
   return `/${prefix}:${path}`;
 }
+
 function logAndReturn(...values) {
   // console.log(values.join("\t"));
   return values[values.length-1];
@@ -40,35 +90,8 @@ function logAndReturn(...values) {
 module.exports = {
   siteName: 'Galaxy Community Hub: The Squeakquel',
   siteDescription: 'All about Galaxy and its community',
-  templates: {
-    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
-    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
-    Platform: node => logAndReturn("Platform", rmPathPrefix(node.path, 1)),
-  },
-  // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
-  plugins: [
-    {
-      use: '@gridsome/source-filesystem',
-      options: {
-        path: ['content/**/index.md', '!content/use/*/index.md'],
-        typeName: 'Article',
-      }
-    },
-    {
-      use: '@gridsome/source-filesystem',
-      options: {
-        path: ['content/**/*.md', '!content/**/index.md'],
-        typeName: 'Insert',
-      }
-    },
-    {
-      use: '@gridsome/source-filesystem',
-      options: {
-        path: 'content/use/*/index.md',
-        typeName: 'Platform',
-      }
-    },
-  ],
+  templates: mkTemplates(COLLECTIONS),
+  plugins: mkPlugins(COLLECTIONS),
   transformers: {
     // Add markdown support to all filesystem sources
     remark: {
