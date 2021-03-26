@@ -5,17 +5,16 @@
 // To restart press CTRL + C in terminal and run `gridsome develop`
 
 const nodePath = require('path');
+const fs = require('fs');
 
-const COLLECTIONS = new Map([
-  ['Platform', '/use/'],
-]);
+const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
 function mkTemplates(collections) {
   let templates = {
     Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
     Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
   };
-  for (let name of collections.keys()) {
+  for (let name of Object.keys(collections)) {
     templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, 1));
   }
   return templates;
@@ -39,7 +38,7 @@ function mkPlugins(collections) {
       }
     },
   ];
-  for (let [name, urlPath] of collections.entries()) {
+  for (let [name, urlPath] of Object.entries(collections)) {
     let globPath = nodePath.join('content', urlPath, '*/index.md');
     plugins[0].options.path.push('!'+globPath);
     let plugin = {
@@ -90,8 +89,8 @@ function logAndReturn(...values) {
 module.exports = {
   siteName: 'Galaxy Community Hub: The Squeakquel',
   siteDescription: 'All about Galaxy and its community',
-  templates: mkTemplates(COLLECTIONS),
-  plugins: mkPlugins(COLLECTIONS),
+  templates: mkTemplates(CONFIG['collections']),
+  plugins: mkPlugins(CONFIG['collections']),
   transformers: {
     // Add markdown support to all filesystem sources
     remark: {

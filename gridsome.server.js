@@ -1,15 +1,16 @@
-// Using the Server API: https://gridsome.org/docs/server-api/
+// Server API makes it possible to hook into various parts of Gridsome
+// on server-side and add custom data to the GraphQL data layer.
+// Learn more: https://gridsome.org/docs/server-api/
+
+// Changes here require a server restart.
+// To restart press CTRL + C in terminal and run `gridsome develop`
+
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
 
-const MEDIATED_DIR = "src/mediated-pages";
-const CATEGORIES = new Map([
-  ["/blog",  "blog"],
-  ["/events", "events"],
-  ["/news", "news"],
-  ["/careers", "careers"],
-]);
+const MEDIATED_DIR = 'src/mediated-pages';
+const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
 function getFilesDeep(rootDir) {
   /**
@@ -73,7 +74,7 @@ function categorize(pathParts) {
    */
   let keyParts = pathParts.slice(0, pathParts.length-2);
   let key = keyParts.join("/");
-  let category = CATEGORIES.get(key);
+  let category = CONFIG['categories'][key];
   if (category === undefined) {
     return null;
   } else {
@@ -178,6 +179,7 @@ module.exports = function(api) {
     const oneYearAgo = new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
     const todayStr = dateToStr(now);
     const oneYearAgoStr = dateToStr(oneYearAgo);
+    // The context variables every mediated page receives:
     const context = {
       today: todayStr,
       oneYearAgo: oneYearAgoStr,
