@@ -72,6 +72,7 @@ function categorize(pathParts) {
    *  let category = categorize(pathParts)   // "events"
    *  ```
    */
+  //TODO: Allow trailing slashes in category paths.
   let keyParts = pathParts.slice(0, pathParts.length-2);
   let key = keyParts.join("/");
   let category = CONFIG['categories'][key];
@@ -88,8 +89,11 @@ function dateToStr(date) {
 }
 
 // Based on https://github.com/gridsome/gridsome/issues/292#issuecomment-483347365
-//TODO: Could actually parse the graymatter and add any images from there, no matter where
-//      they're located. Just take anything that looks like a path and check if it exists.
+/*TODO: Could actually parse the graymatter and add any images from there, no matter where
+ *      they're located. Just take anything that looks like a path and check if it exists.
+ *      This would be more parsimonious, avoiding adding images in the directory but not actually
+ *      used, or ones already in the build b/c of a Markdown reference.
+ */
 async function resolveImages(node, args, context, info) {
   let images = {};
   let dirPath = path.join(__dirname, node.fileInfo.directory);
@@ -136,22 +140,18 @@ module.exports = function(api) {
         hasDate: Boolean
       }
     `);
-    actions.addSchemaResolvers({
-      Article: {
+    let collections = (['Article']).concat(Object.keys(CONFIG['collections']));
+    let schemas = {};
+    for (let collection of collections) {
+      schemas[collection] = {
         images: {
           type: imageType.type,
           args: imageType.args,
           resolve: resolveImages,
         }
-      },
-      Platform: {
-        images: {
-          type: imageType.type,
-          args: imageType.args,
-          resolve: resolveImages,
-        }
-      }
-    });
+      };
+    }
+    actions.addSchemaResolvers(schemas);
   });
 
   // Populate the derived fields.
