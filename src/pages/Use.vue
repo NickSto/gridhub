@@ -44,7 +44,7 @@ query {
     title
     content
   }
-  platforms: allPlatform(sortBy: "title", order: ASC) {
+  platforms: allPlatform(sortBy: "title", order: ASC, filter: {filename: {eq: "index"}}) {
     totalCount
     edges {
       node {

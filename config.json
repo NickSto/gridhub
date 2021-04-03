@@ -1,4 +1,5 @@
 {
+  "contentDir": "content",
   "collections": {
     "Platform": "/use/"
   },

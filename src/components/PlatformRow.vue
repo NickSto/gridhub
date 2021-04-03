@@ -1,7 +1,10 @@
 <template>
   <tr>
     <td class="title">
-      <a :href="platform.path">{{ platform.title }}</a>
+      <a :href="platform.path">
+        <template v-if="platform.title">{{ platform.title }}</template>
+        <template v-else>{{ platform.path }}</template>
+      </a>
     </td>
     <td class="server">
       <a :href="platform.url">Server</a>

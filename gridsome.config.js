@@ -9,48 +9,50 @@ const fs = require('fs');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
-function mkTemplates(collections) {
-  let templates = {
-    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
-    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
-  };
-  for (let name of Object.keys(collections)) {
-    templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, 1));
-  }
-  return templates;
-}
-
 function mkPlugins(collections) {
   // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
   let plugins = [
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: ['content/**/index.md'],
+        path: [CONFIG.contentDir+'/**/index.md'],
         typeName: 'Article',
       }
     },
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: ['content/**/*.md', '!content/**/index.md'],
+        path: [CONFIG.contentDir+'/**/*.md', '!'+CONFIG.contentDir+'/**/index.md'],
         typeName: 'Insert',
       }
     },
   ];
   for (let [name, urlPath] of Object.entries(collections)) {
-    let globPath = nodePath.join('content', urlPath, '*/index.md');
-    plugins[0].options.path.push('!'+globPath);
+    let dirPath = nodePath.join(CONFIG.contentDir, urlPath);
+    plugins[0].options.path.push(nodePath.join('!'+dirPath, '*/index.md'));
     let plugin = {
-      use: '@gridsome/source-filesystem',
+      use: '@gridsome/vue-remark',
       options: {
-        path: globPath,
         typeName: name,
+        baseDir: dirPath,
+        pathPrefix: urlPath,
+        ignore: [getIgnorePath(urlPath)],
+        template: nodePath.join('src/templates', name+'.vue')
       }
     };
     plugins.push(plugin);
   }
   return plugins;
+}
+
+function getIgnorePath(urlPath) {
+  // Take the path for a collection and return the path for the plugin's `ignore` key.
+  // E.g. '/use/' -------> '*/*/**/*.md'
+  //      '/help/faqs/' -> '*/*/*/**/*.md'
+  // This ignore path makes sure only pages directly under the `urlPath` are included in the
+  // collection.
+  let depth = urlPath.split(nodePath.sep).length - 2;
+  return nodePath.join('*/', '*/'.repeat(depth), '**/*.md');
 }
 
 function rmPathPrefix(path, depth, absolute=null) {
@@ -89,7 +91,10 @@ function logAndReturn(...values) {
 module.exports = {
   siteName: 'Galaxy Community Hub: The Squeakquel',
   siteDescription: 'All about Galaxy and its community',
-  templates: mkTemplates(CONFIG['collections']),
+  templates: {
+    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
+    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
+  },
   plugins: mkPlugins(CONFIG['collections']),
   transformers: {
     // Add markdown support to all filesystem sources

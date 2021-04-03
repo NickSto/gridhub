@@ -96,7 +96,7 @@ function dateToStr(date) {
  */
 async function resolveImages(node, args, context, info) {
   let images = {};
-  let dirPath = path.join(__dirname, node.fileInfo.directory);
+  let dirPath = path.join(__dirname, CONFIG.contentDir, node.path);
   if (! fs.existsSync(dirPath)) {
     console.error(`Directory not found: ${dirPath}`);
     return images;
@@ -156,21 +156,33 @@ module.exports = function(api) {
 
   // Populate the derived fields.
   api.onCreateNode(options => {
+    let exclude = false;
     let pathParts = options.path.split("/");
     options.filename = options.fileInfo.name;
     // Articles
     if (options.internal.typeName === "Article") {
       // Categorize by path.
       options.category = categorize(pathParts);
-      // Label ones with dates.
-      // This gets around the inability of the GraphQL schema to query on null/empty dates.
-      if (options.date) {
-        options.hasDate = true;
-      } else {
-        options.hasDate = false;
+      if (options.filename !== 'index') {
+        console.error(`Non-index.md Article encountered: ${options.path}`);
+      }
+    } else if (options.internal.typeName === "Platform") {
+      if (options.filename !== 'index') {
+        exclude = true;
       }
     }
-    return options;
+    // Label ones with dates.
+    // This gets around the inability of the GraphQL schema to query on null/empty dates.
+    if (options.date) {
+      options.hasDate = true;
+    } else {
+      options.hasDate = false;
+    }
+    if (exclude) {
+      console.log(`Excluding ${options.path}`);
+    } else {
+      return options;
+    }
   });
 
   api.createPages(({ createPage }) => {
