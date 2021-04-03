@@ -26,7 +26,7 @@ function mkPlugins(collections) {
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: ['content/**/index.md', '!content/use/*/index.md'],
+        path: ['content/**/index.md'],
         typeName: 'Article',
       }
     },
