@@ -6,6 +6,7 @@
 
 const nodePath = require('path');
 const fs = require('fs');
+const { rmPrefix, rmSuffix } = require('./src/utils.js');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
@@ -13,10 +14,13 @@ function mkPlugins(collections) {
   // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
   let plugins = [
     {
-      use: '@gridsome/source-filesystem',
+      use: '@gridsome/vue-remark',
       options: {
-        path: [CONFIG.contentDir+'/**/index.md'],
         typeName: 'Article',
+        baseDir: CONFIG.contentDir,
+        pathPrefix: '/',
+        ignore: [],
+        template: 'src/templates/Article.vue'
       }
     },
     {
@@ -29,7 +33,7 @@ function mkPlugins(collections) {
   ];
   for (let [name, urlPath] of Object.entries(collections)) {
     let dirPath = nodePath.join(CONFIG.contentDir, urlPath);
-    plugins[0].options.path.push(nodePath.join('!'+dirPath, '*/index.md'));
+    plugins[0].options.ignore.push(nodePath.join(rmPrefix(rmSuffix(urlPath,'/'),'/')));
     let plugin = {
       use: '@gridsome/vue-remark',
       options: {
@@ -92,7 +96,6 @@ module.exports = {
   siteName: 'Galaxy Community Hub: The Squeakquel',
   siteDescription: 'All about Galaxy and its community',
   templates: {
-    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
     Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
   },
   plugins: mkPlugins(CONFIG['collections']),
