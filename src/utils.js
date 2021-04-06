@@ -3,19 +3,28 @@ const remark = require('remark');
 const remarkHtml = require('remark-html');
 const util = require('util');
 
-export function slugify(string) {
+/* Using a kludge here to allow:
+ * 1) importing this as a module with the `import` statement
+ * 2) importing this into non-modules with the `require` function
+ * 3) easily referencing these functions from other functions in the same file
+ * That's the `module.exports.slugify = slugify` pattern.
+ */
+
+function slugify(string) {
   return string.toLowerCase().replace(/[^\w\d -]/g, '').replace(/[ -]+/g,'-');
 }
+module.exports.slugify = slugify;
 
-export function ensurePrefix(string, char) {
+function ensurePrefix(string, char) {
   if (string.startsWith(char)) {
     return string;
   } else {
     return char+string;
   }
 }
+module.exports.ensurePrefix = ensurePrefix;
 
-export function getImage(imagePath, images) {
+function getImage(imagePath, images) {
   if (! imagePath) {
     return null;
   }
@@ -28,8 +37,9 @@ export function getImage(imagePath, images) {
   let filename = fields[fields.length-1];
   return images[filename];
 }
+module.exports.getImage = getImage;
 
-export function mdToHtml(md) {
+function mdToHtml(md) {
   let rawHtml;
   remark().use(remarkHtml).process(md, (err, file) => {
     if (err) {
@@ -40,16 +50,18 @@ export function mdToHtml(md) {
   });
   return rmPrefix(rmSuffix(rawHtml.trim(),'</p>'),'<p>');
 }
+module.exports.mdToHtml = mdToHtml;
 
-export function rmPrefix(rawString, prefix) {
+function rmPrefix(rawString, prefix) {
   if (rawString.indexOf(prefix) === 0) {
     return rawString.slice(prefix.length);
   } else {
     return rawString;
   }
 }
+module.exports.rmPrefix = rmPrefix;
 
-export function rmSuffix(rawString, suffix) {
+function rmSuffix(rawString, suffix) {
   let suffixIndex = rawString.length - suffix.length;
   if (rawString.slice(suffixIndex) === suffix) {
     return rawString.slice(0, suffixIndex);
@@ -57,26 +69,31 @@ export function rmSuffix(rawString, suffix) {
     return rawString;
   }
 }
+module.exports.rmSuffix = rmSuffix;
 
-export function startswith(string, query) {
+function startswith(string, query) {
   return string.indexOf(query) === 0;
 }
+module.exports.startswith = startswith;
 
-export function endswith(string, query) {
+function endswith(string, query) {
   return string.indexOf(query) === string.length - query.length;
 }
+module.exports.endswith = endswith;
 
-export function titlecase(rawString) {
+function titlecase(rawString) {
   return rawString.charAt(0).toUpperCase() + rawString.substring(1, rawString.length);
 }
+module.exports.titlecase = titlecase;
 
-export function spaceTab(rawStr, tabWidth=8) {
+function spaceTab(rawStr, tabWidth=8) {
   /** Create the same effect as adding a tab to the string, except use spaces. */
   let tabStop = tabWidth*(1+Math.floor(rawStr.length/tabWidth));
   return rawStr.padEnd(tabStop);
 }
+module.exports.spaceTab = spaceTab;
 
-export function describeObject(obj, indent='', maxWidth=100) {
+function describeObject(obj, indent='', maxWidth=100) {
   for (let [name, value] of Object.entries(obj)) {
     let type = typeof value;
     let valueStr;
@@ -98,8 +115,9 @@ export function describeObject(obj, indent='', maxWidth=100) {
     console.log(line);
   }
 }
+module.exports.describeObject = describeObject;
 
-export function logTree(root, depth, indent) {
+function logTree(root, depth, indent) {
   let idStr = "";
   if (root.id) {
     idStr = ` id="${root.id}`;
@@ -117,3 +135,4 @@ export function logTree(root, depth, indent) {
     console.log(`${indent}  (recursion limit)`);
   }
 }
+module.exports.logTree = logTree;
