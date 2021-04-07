@@ -165,6 +165,7 @@ module.exports = function(api) {
       options.category = categorize(pathParts);
       if (options.filename !== 'index') {
         console.error(`Non-index.md Article encountered: ${options.path}`);
+        exclude = true;
       }
     } else if (options.internal.typeName === "Platform") {
       if (options.filename !== 'index') {
@@ -180,6 +181,7 @@ module.exports = function(api) {
     }
     if (exclude) {
       console.log(`Excluding ${options.path}`);
+      return null;
     } else {
       return options;
     }
