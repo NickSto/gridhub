@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
+const { rmPrefix } = require('./src/utils');
 
 const MEDIATED_DIR = 'src/mediated-pages';
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
@@ -172,14 +173,12 @@ module.exports = function(api) {
     if (options.internal.typeName === "Article") {
       // Categorize by path.
       options.category = categorize(pathParts);
-      if (options.filename !== 'index') {
-        console.error(`Non-index.md Article encountered: ${options.path}`);
-        exclude = true;
-      }
-    } else if (options.internal.typeName === "Platform") {
-      if (options.filename !== 'index') {
-        exclude = true;
-      }
+    }
+    if (options.internal.typeName !== "Insert" && options.filename !== 'index') {
+      // All Markdown files should be named `index.md`, unless it's an `Insert`.
+      // `vue-remark` doesn't offer enough filtering to exclude non-index.md files from collection
+      // configurations, so we have to exclude them here.
+      exclude = true;
     }
     // Label ones with dates.
     // This gets around the inability of the GraphQL schema to query on null/empty dates.
@@ -189,7 +188,8 @@ module.exports = function(api) {
       options.hasDate = false;
     }
     if (exclude) {
-      console.log(`Excluding ${options.path}`);
+      let relPath = rmPrefix(options.internal.origin, __dirname+"/");
+      console.log(`Excluding from ${options.internal.typeName}s: ${relPath}`);
       return null;
     } else {
       return options;
