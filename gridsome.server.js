@@ -115,6 +115,15 @@ async function resolveImages(node, args, context, info) {
     for (let attr of ['type', 'mimeType', 'src', 'size', 'sizes', 'srcset', 'dataUri']) {
       imgData[attr] = result[attr];
     }
+    if (result.type !== 'image') {
+      let filename = path.parse(result.filePath).base;
+      let fileType = result.mimeType || 'non-image';
+      console.log(`Saw ${fileType} "${filename}"`);
+      if (result.type !== 'file') {
+        console.error(`  result.type for "${filename}" is "${result.type}"`);
+      }
+      continue
+    }
     if (file !== result.name+result.ext) {
       console.error(`Error: ${file} !== ${result.name+result.ext}`);
       continue
