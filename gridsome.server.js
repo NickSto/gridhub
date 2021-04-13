@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
-const { rmPrefix } = require('./src/utils');
+const { rmPrefix, rmSuffix } = require('./src/utils');
 
 const MEDIATED_DIR = 'src/mediated-pages';
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
@@ -89,6 +89,13 @@ function dateToStr(date) {
   return date.toISOString().slice(0,10);
 }
 
+function findInsertsInMarkdown(content) {
+  /** Parse Markdown content and extract the names of all inserts in `<slot>`s. */
+  //TODO: Replace this monstrosity with actual Markdown parsing.
+  let matches = Array.from(content.matchAll(/<slot\s*name=["']?([^"']+)["']?\s*\/>/ig));
+  return matches.map(match => match[1]);
+}
+
 // Based on https://github.com/gridsome/gridsome/issues/292#issuecomment-483347365
 /*TODO: Could actually parse the graymatter and add any images from there, no matter where
  *      they're located. Just take anything that looks like a path and check if it exists.
@@ -134,6 +141,61 @@ async function resolveImages(node, args, context, info) {
   return images;
 }
 
+function processNonInsert(node, collection) {
+  if (node === null) {
+    return node;
+  }
+  if (node.filename !== 'index') {
+    // All Markdown files should be named `index.md`, unless it's an `Insert`.
+    // `vue-remark` doesn't offer enough filtering to exclude non-index.md files from collection
+    // configurations, so we have to exclude them here.
+    let relPath = rmPrefix(node.internal.origin, __dirname+"/");
+    console.log(`Excluding from ${node.internal.typeName}s: ${relPath}`);
+    return null;
+  }
+  // Label ones with dates.
+  // This gets around the inability of the GraphQL schema to query on null/empty dates.
+  if (node.date) {
+    node.hasDate = true;
+  } else {
+    node.hasDate = false;
+  }
+  // Find and link Inserts.
+  // Note: This is technically not a stable API, but it's unlikely to go away and there's almost no
+  // other way to do this.
+  const store = collection._store;
+  const insertCollection = store.getCollection('Insert');
+  node.inserts = [];
+  for (let insertName of findInsertsInMarkdown(node.content)) {
+    let path = `/insert:${insertName}/`;
+    let insert = insertCollection.findNode({path:path});
+    if (insert) {
+      node.inserts.push(store.createReference(insert));
+    } else {
+      console.error(`Failed to find Insert for path "${path}"`);
+    }
+  }
+  return node;
+}
+
+function processArticle(node, collection) {
+  if (node === null) {
+    return node;
+  }
+  // Categorize by path.
+  let pathParts = node.path.split("/");
+  node.category = categorize(pathParts);
+  return node;
+}
+
+function processInsert(node, collection) {
+  if (node === null) {
+    return node;
+  }
+  node.name = rmSuffix(rmPrefix(node.path,'/insert:'),'/');
+  return node;
+}
+
 module.exports = function(api) {
   api.loadSource(actions => {
     // Using the Data Store API: https://gridsome.org/docs/data-store-api/
@@ -165,35 +227,21 @@ module.exports = function(api) {
   });
 
   // Populate the derived fields.
-  api.onCreateNode(options => {
-    let exclude = false;
-    let pathParts = options.path.split("/");
-    options.filename = options.fileInfo.name;
+  api.onCreateNode((node, collection) => {
+    let typeName = node.internal.typeName;
+    node.filename = node.fileInfo.name;
+    // Everything except Inserts
+    if (typeName !== 'Insert') {
+      node = processNonInsert(node, collection);
+    }
     // Articles
-    if (options.internal.typeName === "Article") {
-      // Categorize by path.
-      options.category = categorize(pathParts);
+    if (typeName === 'Article') {
+      node = processArticle(node, collection);
+    // Inserts
+    } else if (typeName === 'Insert') {
+      node = processInsert(node, collection);
     }
-    if (options.internal.typeName !== "Insert" && options.filename !== 'index') {
-      // All Markdown files should be named `index.md`, unless it's an `Insert`.
-      // `vue-remark` doesn't offer enough filtering to exclude non-index.md files from collection
-      // configurations, so we have to exclude them here.
-      exclude = true;
-    }
-    // Label ones with dates.
-    // This gets around the inability of the GraphQL schema to query on null/empty dates.
-    if (options.date) {
-      options.hasDate = true;
-    } else {
-      options.hasDate = false;
-    }
-    if (exclude) {
-      let relPath = rmPrefix(options.internal.origin, __dirname+"/");
-      console.log(`Excluding from ${options.internal.typeName}s: ${relPath}`);
-      return null;
-    } else {
-      return options;
-    }
+    return node;
   });
 
   api.createPages(({ createPage }) => {

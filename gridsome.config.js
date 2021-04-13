@@ -14,6 +14,13 @@ function mkPlugins(collections) {
   // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
   let plugins = [
     {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: [CONFIG.contentDir+'/**/*.md', '!'+CONFIG.contentDir+'/**/index.md'],
+        typeName: 'Insert',
+      }
+    },
+    {
       use: '@gridsome/vue-remark',
       options: {
         typeName: 'Article',
@@ -23,17 +30,10 @@ function mkPlugins(collections) {
         template: 'src/templates/Article.vue'
       }
     },
-    {
-      use: '@gridsome/source-filesystem',
-      options: {
-        path: [CONFIG.contentDir+'/**/*.md', '!'+CONFIG.contentDir+'/**/index.md'],
-        typeName: 'Insert',
-      }
-    },
   ];
   for (let [name, urlPath] of Object.entries(collections)) {
     let dirPath = nodePath.join(CONFIG.contentDir, urlPath);
-    plugins[0].options.ignore.push(nodePath.join(rmPrefix(rmSuffix(urlPath,'/'),'/')));
+    plugins[1].options.ignore.push(nodePath.join(rmPrefix(rmSuffix(urlPath,'/'),'/')));
     let plugin = {
       use: '@gridsome/vue-remark',
       options: {
