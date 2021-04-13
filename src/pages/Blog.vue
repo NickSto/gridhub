@@ -34,12 +34,12 @@ export default {
 
 <page-query>
 query {
-  main: insert (path: "/insert:blog/main/") {
+  main: insert (path: "/insert:/blog/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:blog/footer/") {
+  footer: insert (path: "/insert:/blog/footer/") {
     id
     title
     content

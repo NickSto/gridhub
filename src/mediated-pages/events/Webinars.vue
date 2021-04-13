@@ -51,12 +51,12 @@ export default {
 
 <page-query>
 query ($today: Date!, $oneYearAgo: Date!) {
-  main: insert (path: "/insert:events/webinars/main/") {
+  main: insert (path: "/insert:/events/webinars/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:events/webinars/footer/") {
+  footer: insert (path: "/insert:/events/webinars/footer/") {
     id
     title
     content

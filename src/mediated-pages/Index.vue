@@ -45,12 +45,12 @@ export default {
 
 <page-query>
 query ($today: Date!) {
-  main: insert (path: "/insert:main/") {
+  main: insert (path: "/insert:/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:footer/") {
+  footer: insert (path: "/insert:/footer/") {
     id
     title
     content

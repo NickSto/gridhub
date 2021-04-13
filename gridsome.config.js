@@ -84,7 +84,7 @@ function makeFilenamePath(prefix, node) {
   } else {
     path = [directory, node.fileInfo.name].join("/");
   }
-  return `/${prefix}:${path}`;
+  return `/${prefix}:/${path}`;
 }
 
 function logAndReturn(...values) {
