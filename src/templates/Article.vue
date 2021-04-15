@@ -11,12 +11,6 @@
           Contact: {{ $page.article.contact }}
         </p>
         <p class="date" v-if="$page.article.date">{{ $page.article.date }}</p>
-        <p>Inserts:</p>
-        <ul>
-          <li v-for="insert of $page.article.inserts" :key="insert.name">
-            {{ insert.name }}
-          </li>
-        </ul>
       </section>
     </header>
     <article class="content">
