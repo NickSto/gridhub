@@ -50,20 +50,20 @@ export default {
 </script>
 
 <page-query>
-query ($today: Date!, $oneYearAgo: Date!) {
-  main: insert (path: "/insert:/events/main/") {
+query($today: Date!, $oneYearAgo: Date!) {
+  main: insert(path: "/insert:/events/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:/events/footer/") {
+  footer: insert(path: "/insert:/events/footer/") {
     id
     title
     content
   }
   upcoming: allArticle(
       sortBy: "date", order: ASC, filter: {
-        category: { eq: "events" }, date: { gte: $today }
+        category: {eq: "events"}, date: {gte: $today}
       }
     ) {
     totalCount
@@ -85,7 +85,7 @@ query ($today: Date!, $oneYearAgo: Date!) {
   }
   recent: allArticle(
       sortBy: "date", order: DESC, filter: {
-        category: { eq: "events" }, date: { between: [$oneYearAgo, $today] }, hasDate: { eq: true }
+        category: {eq: "events"}, date: {between: [$oneYearAgo, $today]}, has_date: {eq: true}
       }
     ) {
     totalCount

@@ -50,13 +50,13 @@ export default {
 </script>
 
 <page-query>
-query ($today: Date!, $oneYearAgo: Date!) {
-  main: insert (path: "/insert:/events/cofests/main/") {
+query($today: Date!, $oneYearAgo: Date!) {
+  main: insert(path: "/insert:/events/cofests/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:/events/cofests/footer/") {
+  footer: insert(path: "/insert:/events/cofests/footer/") {
     id
     title
     content
@@ -85,8 +85,8 @@ query ($today: Date!, $oneYearAgo: Date!) {
   }
   recent: allArticle(
       sortBy: "date", order: DESC, filter: {
-        category: { eq: "events" }, tags: { contains: "cofest" },
-        date: { between: [$oneYearAgo, $today] }, hasDate: { eq: true }
+        category: {eq: "events"}, tags: {contains: "cofest"},
+        date: {between: [$oneYearAgo, $today]}, has_date: {eq: true}
       }
     ) {
     totalCount

@@ -85,38 +85,38 @@ export default {
 </script>
 
 <page-query>
-query ($today: Date!) {
-  jumbotron: insert (path: "/insert:/jumbotron/") {
+query($today: Date!) {
+  jumbotron: insert(path: "/insert:/jumbotron/") {
     id
     title
     content
   }
-  main: insert (path: "/insert:/main/") {
+  main: insert(path: "/insert:/main/") {
     id
     title
     content
   }
-  videos: insert (path: "/insert:/homepage-videos/") {
+  videos: insert(path: "/insert:/homepage-videos/") {
     id
     title
     content
   }
-  platforms: insert (path: "/insert:/homepage-platforms/") {
+  platforms: insert(path: "/insert:/homepage-platforms/") {
     id
     title
     content
   }
-  pubs: insert (path: "/insert:/homepage-pubs/") {
+  pubs: insert(path: "/insert:/homepage-pubs/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:/footer/") {
+  footer: insert(path: "/insert:/footer/") {
     id
     title
     content
   }
-  news: allArticle(limit: 5, filter: { category: { eq: "news" }}) {
+  news: allArticle(limit: 5, filter: {category: {eq: "news" }}) {
     totalCount
     edges {
       node {
@@ -130,7 +130,7 @@ query ($today: Date!) {
   }
   events: allArticle(
       limit: 5, sortBy: "date", order: ASC,
-      filter: { category: { eq: "events" }, date: { gte: $today } }
+      filter: {category: {eq: "events"}, date: {gte: $today}}
     ) {
     totalCount
     edges {
@@ -144,7 +144,7 @@ query ($today: Date!) {
       }
     }
   }
-  blog: allArticle(limit: 5, filter: { category: { eq: "blog" }}) {
+  blog: allArticle(limit: 5, filter: {category: {eq: "blog"}}) {
     totalCount
     edges {
       node {
@@ -157,7 +157,7 @@ query ($today: Date!) {
     }
   }
   careers: allArticle(
-      limit: 5, sortBy: "date", order: ASC, filter: { category: { eq: "careers" } }
+      limit: 5, sortBy: "date", order: ASC, filter: {category: {eq: "careers"}}
     ) {
     totalCount
     edges {

@@ -39,8 +39,8 @@
 </template>
 
 <page-query>
-query Platform ($path: String!) {
-   platform (path: $path) {
+query Platform($path: String!) {
+   platform(path: $path) {
     id
     title
     url

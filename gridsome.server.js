@@ -156,9 +156,9 @@ function processNonInsert(node, collection) {
   // Label ones with dates.
   // This gets around the inability of the GraphQL schema to query on null/empty dates.
   if (node.date) {
-    node.hasDate = true;
+    node.has_date = true;
   } else {
-    node.hasDate = false;
+    node.has_date = false;
   }
   // Find and link Inserts.
   // Note: This is technically not a stable API, but it's unlikely to go away and there's almost no
@@ -209,7 +209,7 @@ module.exports = function(api) {
     actions.addSchemaTypes(`
       type Article implements Node @infer {
         category: String
-        hasDate: Boolean
+        has_date: Boolean
       }
     `);
     let collections = (['Article']).concat(Object.keys(CONFIG['collections']));

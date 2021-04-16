@@ -36,20 +36,20 @@ export default {
 </script>
 
 <page-query>
-query ($today: Date!) {
-  main: insert (path: "/insert:/events/archive/main/") {
+query($today: Date!) {
+  main: insert(path: "/insert:/events/archive/main/") {
     id
     title
     content
   }
-  footer: insert (path: "/insert:/events/archive/footer/") {
+  footer: insert(path: "/insert:/events/archive/footer/") {
     id
     title
     content
   }
   events: allArticle(
       sortBy: "date", order: DESC,
-      filter: { category: { eq: "events" }, date: { lt: $today } }
+      filter: {category: {eq: "events"}, date: {lt: $today}}
     ) {
     totalCount
     edges {

@@ -24,8 +24,8 @@
 </template>
 
 <page-query>
-query Article ($path: String!) {
-   article: article (path: $path) {
+query Article($path: String!) {
+   article(path: $path) {
     id
     title
     tease

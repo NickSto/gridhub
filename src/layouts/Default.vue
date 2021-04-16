@@ -24,7 +24,7 @@ query {
   metadata {
     siteName
   }
-  footer: insert (path: "/insert:/site-footer/") {
+  footer: insert(path: "/insert:/site-footer/") {
     id
     title
     content
