@@ -5,23 +5,61 @@
       <h1 class="display-4">{{ $page.main.title }}</h1>
     </header>
 
+    <section class="section-content jumbotron" v-if="$page.jumbotron">
+      <div class="row text-center markdown" v-html="$page.jumbotron.content" />
+    </section>
+
     <section class="section-content">
       <div id="splash-row">
-        <div class="col-sm-12" v-html="$page.main.content" />
+        <div class="col-sm-12 lead" v-html="$page.main.content" />
       </div>
 
       <div class="row">
-        <div class="col-sm-4">
-          <h2><g-link to="/news/">News</g-link></h2>
+        <div class="pseudo-card col-sm-4">
+          <h2><g-link to="/news/"><span class="fas fa-bullhorn"></span>News</g-link></h2>
           <ArticleListBrief v-for="edge in $page.news.edges" :key="edge.node.id" :article="edge.node" />
         </div>
-        <div class="col-sm-4">
-          <h2><g-link to="/events/">Events</g-link></h2>
+        <div class="pseudo-card col-sm-4">
+          <h2><g-link to="/events/"><span class="far fa-calendar-alt"></span>Events</g-link></h2>
           <ArticleListBrief v-for="edge in $page.events.edges" :key="edge.node.id" :article="edge.node" />
         </div>
-        <div class="col-sm-4">
-          <h2><g-link to="/blog/">Blog</g-link></h2>
+        <div class="pseudo-card col-sm-4">
+          <h2>
+            <a href="http://twitter.com/galaxyproject">
+              <span class="fab fa-twitter"></span>@galaxyproject
+            </a>
+            <a class="twitter-timeline" href="https://twitter.com/galaxyproject" data-dnt="true"
+              height="400" data-chrome="noheader nofooter noscrollbar noborders transparent"
+              data-widget-id="384667676347363329">
+            </a>
+          </h2>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pseudo-card col-sm-4" v-if="$page.videos" v-html="$page.videos.content" />
+        <div class="pseudo-card col-sm-4">
+          <h2><g-link to="/blog/"><span class="fas fa-pencil-alt"></span>Blog</g-link></h2>
           <ArticleListBrief v-for="edge in $page.blog.edges" :key="edge.node.id" :article="edge.node" />
+        </div>
+        <div class="pseudo-card col-sm-4">
+          <h2><a href="/careers/"><span class="fas fa-user-astronaut"></span>Careers</a></h2>
+          <ArticleListBrief v-for="edge in $page.careers.edges" :key="edge.node.id" :article="edge.node" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pseudo-card col-sm-4" v-if="$page.platforms">
+          <h2><a href="/use/"><span class="fas fa-server"></span>{{ $page.platforms.title }}</a></h2>
+          <div class="markdown" v-html="$page.platforms.content" />
+        </div>
+        <div class="pseudo-card col-sm-8" v-if="$page.pubs">
+          <h2>
+            <a href="https://www.zotero.org/groups/galaxy">
+              <span class="fas fa-book-open"></span>{{ $page.pubs.title }}
+            </a>
+          </h2>
+          <div class="markdown" v-html="$page.pubs.content" />
         </div>
       </div>
     </section>
@@ -40,12 +78,35 @@ export default {
   metaInfo: {
     title: 'Home',
   },
+  mounted() {
+    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+  }
 };
 </script>
 
 <page-query>
 query ($today: Date!) {
+  jumbotron: insert (path: "/insert:/jumbotron/") {
+    id
+    title
+    content
+  }
   main: insert (path: "/insert:/main/") {
+    id
+    title
+    content
+  }
+  videos: insert (path: "/insert:/homepage-videos/") {
+    id
+    title
+    content
+  }
+  platforms: insert (path: "/insert:/homepage-platforms/") {
+    id
+    title
+    content
+  }
+  pubs: insert (path: "/insert:/homepage-pubs/") {
     id
     title
     content
@@ -77,6 +138,7 @@ query ($today: Date!) {
         id
         title
         tease
+        date (format: "MMM D")
         external_url
         path
       }
@@ -94,5 +156,49 @@ query ($today: Date!) {
       }
     }
   }
+  careers: allArticle(
+      limit: 5, sortBy: "date", order: ASC, filter: { category: { eq: "careers" } }
+    ) {
+    totalCount
+    edges {
+      node {
+        id
+        title
+        closes (format: "MMM D")
+        location
+        external_url
+        path
+      }
+    }
+  }
 }
 </page-query>
+
+<style>
+/* This won't work in a scoped style for some reason. */
+.jumbotron .markdown img {
+  max-width: 100%;
+}
+</style>
+
+<style scoped>
+.jumbo-image {
+  background-color: lightyellow;
+  padding-top: 100px;
+  border: 4px solid black;
+}
+.pseudo-card {
+  background-color: #E0EAF2;
+  border: 3px solid white;
+  border-radius: 10px;
+}
+.pseudo-card h2 .fas, .pseudo-card h2 .far {
+  margin-right: 0.7em;
+}
+.pseudo-card .markdown::v-deep p {
+  font-size: 80%;
+}
+.pseudo-card .markdown::v-deep a {
+  font-size: 125%;
+}
+</style>
