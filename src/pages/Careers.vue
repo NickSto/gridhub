@@ -44,6 +44,7 @@ query {
         title
         date (format: "D MMM YYYY")
         closes (format: "D MMM YYYY")
+        closed
         continent
         location
         location_url

@@ -1,16 +1,20 @@
 <template>
-  <div class="card border-info">
+  <div :class="['card', article.closed ? 'border-muted text-muted closed' : 'border-primary']">
     <div class="card-header">
       <Continent :continent="article.continent" />
-      <a :href="article.external_url">{{ article.title }}</a>
+      <a :class="article.closed ? 'text-muted' : ''" :href="article.external_url">
+        {{ article.title }}
+      </a>
     </div>
     <p class="location">
-      <a :href="article.location_url">{{ article.location }}</a>
+      <a :class="article.closed ? 'text-muted' : ''" :href="article.location_url">
+        {{ article.location }}
+      </a>
     </p>
     <p class="posted">
       Posted: {{ article.date }}
       <br>
-      <span v-if="article.closes" class="text-warning">
+      <span v-if="article.closes" :class="article.closed ? 'text-muted' : 'text-warning'">
         Apply by: {{ article.closes }}
       </span>
     </p>
@@ -18,7 +22,7 @@
     <p v-if="article.contact" class="contact">
       Contact: {{ article.contact }}
     </p>
-    <p v-if="article.image">
+    <p v-if="article.image" class="logo">
       <a :href="article.external_url">
         <g-image class="card-img-bottom" :src="getImage(article.image)" />
       </a>
@@ -53,5 +57,8 @@ export default {
 }
 .contact {
   font-style: italic;
+}
+.closed .logo {
+  filter: opacity(33%);
 }
 </style>

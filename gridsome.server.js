@@ -182,6 +182,13 @@ function processArticle(node, collection) {
   // Categorize by path.
   let pathParts = node.path.split("/");
   node.category = categorize(pathParts);
+  if (node.category === 'careers') {
+    if (node.closes && dateStrDiff(COMPILE_DATE, node.closes) > 0) {
+      node.closed = true;
+    } else {
+      node.closed = false;
+    }
+  }
   return node;
 }
 
@@ -208,6 +215,7 @@ module.exports = function(api) {
         category: String
         has_date: Boolean
         days_ago: Int
+        closed: Boolean
       }
     `);
     let collections = (['Article']).concat(Object.keys(CONFIG['collections']));

@@ -157,7 +157,9 @@ query {
     }
   }
   careers: allArticle(
-      limit: 5, sortBy: "date", order: ASC, filter: {category: {eq: "careers"}}
+      limit: 5, sortBy: "date", order: DESC, filter: {
+        category: {eq: "careers"}, closed: {eq: false}
+      }
     ) {
     totalCount
     edges {
