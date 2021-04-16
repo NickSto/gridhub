@@ -85,7 +85,7 @@ export default {
 </script>
 
 <page-query>
-query($today: Date!) {
+query {
   jumbotron: insert(path: "/insert:/jumbotron/") {
     id
     title
@@ -130,7 +130,7 @@ query($today: Date!) {
   }
   events: allArticle(
       limit: 5, sortBy: "date", order: ASC,
-      filter: {category: {eq: "events"}, date: {gte: $today}}
+      filter: {category: {eq: "events"}, has_date: {eq: true}, days_ago: {lte: 0}}
     ) {
     totalCount
     edges {

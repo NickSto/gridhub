@@ -15,14 +15,21 @@ function slugify(string) {
 }
 module.exports.slugify = slugify;
 
-function ensurePrefix(string, char) {
-  if (string.startsWith(char)) {
-    return string;
-  } else {
-    return char+string;
-  }
+function dateToStr(date) {
+  /** Turn a `Date` object into a string like "2021-03-12". */
+  return date.toISOString().slice(0,10);
 }
-module.exports.ensurePrefix = ensurePrefix;
+module.exports.dateToStr = dateToStr;
+
+function dateStrDiff(date1, date2) {
+  /** Get the difference, in whole days, between two date strings.
+   * E.g. `dateStrDiff('2021-04-16', '2021-04-14') === 2`
+   */
+  let date1date = new Date(date1);
+  let date2date = new Date(date2);
+  return Math.round((date1date-date2date)/1000/60/60/24);
+}
+module.exports.dateStrDiff = dateStrDiff;
 
 function getImage(imagePath, images) {
   if (! imagePath) {
@@ -51,6 +58,15 @@ function mdToHtml(md) {
   return rmPrefix(rmSuffix(rawHtml.trim(),'</p>'),'<p>');
 }
 module.exports.mdToHtml = mdToHtml;
+
+function ensurePrefix(string, char) {
+  if (string.startsWith(char)) {
+    return string;
+  } else {
+    return char+string;
+  }
+}
+module.exports.ensurePrefix = ensurePrefix;
 
 function rmPrefix(rawString, prefix) {
   if (rawString.indexOf(prefix) === 0) {

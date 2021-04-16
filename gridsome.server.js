@@ -8,10 +8,11 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
-const { rmPrefix, rmSuffix } = require('./src/utils');
+const { rmPrefix, rmSuffix, dateToStr, dateStrDiff } = require('./src/utils');
 
 const MEDIATED_DIR = 'src/mediated-pages';
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
+const COMPILE_DATE = dateToStr(new Date());
 
 function getFilesDeep(rootDir) {
   /**
@@ -84,11 +85,6 @@ function categorize(pathParts) {
   }
 }
 
-function dateToStr(date) {
-  // Turn a `Date` object into a string like "2021-03-12".
-  return date.toISOString().slice(0,10);
-}
-
 function findInsertsInMarkdown(content) {
   /** Parse Markdown content and extract the names of all inserts in `<slot>`s. */
   //TODO: Replace this monstrosity with actual Markdown parsing.
@@ -156,6 +152,7 @@ function processNonInsert(node, collection) {
   // Label ones with dates.
   // This gets around the inability of the GraphQL schema to query on null/empty dates.
   if (node.date) {
+    node.days_ago = dateStrDiff(COMPILE_DATE, node.date);
     node.has_date = true;
   } else {
     node.has_date = false;
@@ -210,6 +207,7 @@ module.exports = function(api) {
       type Article implements Node @infer {
         category: String
         has_date: Boolean
+        days_ago: Int
       }
     `);
     let collections = (['Article']).concat(Object.keys(CONFIG['collections']));
@@ -246,14 +244,9 @@ module.exports = function(api) {
 
   api.createPages(({ createPage }) => {
     // Using the Pages API: https://gridsome.org/docs/pages-api/
-    const now = new Date();
-    const oneYearAgo = new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
-    const todayStr = dateToStr(now);
-    const oneYearAgoStr = dateToStr(oneYearAgo);
     // The context variables every mediated page receives:
     const context = {
-      today: todayStr,
-      oneYearAgo: oneYearAgoStr,
+      today: COMPILE_DATE,
     };
     getFilesDeep(MEDIATED_DIR).forEach(filePath => {
       createPage({

@@ -50,7 +50,7 @@ export default {
 </script>
 
 <page-query>
-query($today: Date!, $oneYearAgo: Date!) {
+query {
   main: insert(path: "/insert:/events/cofests/main/") {
     id
     title
@@ -63,7 +63,8 @@ query($today: Date!, $oneYearAgo: Date!) {
   }
   upcoming: allArticle(
       sortBy: "date", order: ASC, filter: {
-        category: { eq: "events" }, tags: { contains: "cofest" }, date: { gte: $today }
+        category: {eq: "events"}, tags: {contains: "cofest"},
+        has_date: {eq: true}, days_ago: {lte: 0}
       }
     ) {
     totalCount
@@ -86,7 +87,7 @@ query($today: Date!, $oneYearAgo: Date!) {
   recent: allArticle(
       sortBy: "date", order: DESC, filter: {
         category: {eq: "events"}, tags: {contains: "cofest"},
-        date: {between: [$oneYearAgo, $today]}, has_date: {eq: true}
+        has_date: {eq: true}, days_ago: {between: [1, 365]}
       }
     ) {
     totalCount

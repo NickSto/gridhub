@@ -36,7 +36,7 @@ export default {
 </script>
 
 <page-query>
-query($today: Date!) {
+query {
   main: insert(path: "/insert:/events/archive/main/") {
     id
     title
@@ -48,8 +48,9 @@ query($today: Date!) {
     content
   }
   events: allArticle(
-      sortBy: "date", order: DESC,
-      filter: {category: {eq: "events"}, date: {lt: $today}}
+      sortBy: "date", order: DESC, filter: {
+        category: {eq: "events"}, has_date: {eq: true}, days_ago: {gt: 0}
+      }
     ) {
     totalCount
     edges {
