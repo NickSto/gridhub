@@ -10,32 +10,9 @@ const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
 const { rmPrefix, rmSuffix, dateToStr, dateStrDiff } = require('./src/utils');
 
-const MEDIATED_DIR = 'src/mediated-pages';
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 const COMPILE_DATE = dateToStr(new Date());
 
-function getFilesDeep(rootDir) {
-  /**
-   * Find all the children of `rootDir`.
-   * Arguments:
-   *   `rootDir` (`String`): An absolute or relative path of a directory.
-   * Returns:
-   *   `files` (`Array`): An array of paths relative to the same directory as the `rootDir`.
-   *     Returns only the paths to files (tested by `isFile()`).
-   */
-  let files = [];
-  let children = fs.readdirSync(rootDir, {withFileTypes: true});
-  for (let child of children) {
-    let childPath = path.join(rootDir,child.name)
-    if (child.isDirectory()) {
-      let descendents = getFilesDeep(childPath);
-      files = files.concat(descendents);
-    } else if (child.isFile()) {
-      files.push(childPath);
-    }
-  }
-  return files;
-}
 
 function getFilesShallow(dirPath, excludeExt=null) {
   let files = [];
@@ -48,22 +25,6 @@ function getFilesShallow(dirPath, excludeExt=null) {
     }
   }
   return files;
-}
-
-function fsPathToUrlPath(fsPath) {
-  if (fsPath.indexOf(MEDIATED_DIR) !== 0) {
-    throw `${fsPath} does not start with ${MEDIATED_DIR}`;
-  }
-  let relativePath = fsPath.slice(MEDIATED_DIR.length);
-  let pathParts = path.parse(relativePath);
-  if (pathParts.ext !== ".vue") {
-    throw `${fsPath} does not end in '.vue'`;
-  }
-  let end = pathParts.name.toLowerCase()+"/";
-  if (pathParts.name === 'Index') {
-    end = "";
-  }
-  return path.join(pathParts.dir,end);
 }
 
 function categorize(pathParts) {
@@ -249,19 +210,4 @@ module.exports = function(api) {
     }
     return node;
   });
-
-  api.createPages(({ createPage }) => {
-    // Using the Pages API: https://gridsome.org/docs/pages-api/
-    // The context variables every mediated page receives:
-    const context = {
-      today: COMPILE_DATE,
-    };
-    getFilesDeep(MEDIATED_DIR).forEach(filePath => {
-      createPage({
-        path: fsPathToUrlPath(filePath),
-        component: filePath,
-        context: context,
-      });
-    });
-  })
 }
