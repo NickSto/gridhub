@@ -8,24 +8,11 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
-const { rmPrefix, rmSuffix, dateToStr, dateStrDiff } = require('./src/utils');
+const { rmPrefix, rmSuffix, dateToStr, dateStrDiff, getFilesShallow } = require('./src/utils');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 const COMPILE_DATE = dateToStr(new Date());
 
-
-function getFilesShallow(dirPath, excludeExt=null) {
-  let files = [];
-  let children = fs.readdirSync(dirPath, {withFileTypes: true});
-  for (let child of children) {
-    if (child.isFile()) {
-      if (excludeExt === null || path.parse(child.name).ext !== excludeExt) {
-        files.push(child.name);
-      }
-    }
-  }
-  return files;
-}
 
 function categorize(pathParts) {
   /** Take a `pathParts` made by splitting the path on `"/"` and return a category:
@@ -106,8 +93,6 @@ function processNonInsert(node, collection) {
     // All Markdown files should be named `index.md`, unless it's an `Insert`.
     // `vue-remark` doesn't offer enough filtering to exclude non-index.md files from collection
     // configurations, so we have to exclude them here.
-    let relPath = rmPrefix(node.internal.origin, __dirname+"/");
-    console.log(`Excluding from ${node.internal.typeName}s: ${relPath}`);
     return null;
   }
   // Label ones with dates.

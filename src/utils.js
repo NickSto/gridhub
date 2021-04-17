@@ -1,7 +1,9 @@
 
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
 const remark = require('remark');
 const remarkHtml = require('remark-html');
-const util = require('util');
 
 /* Using a kludge here to allow:
  * 1) importing this as a module with the `import` statement
@@ -23,7 +25,7 @@ module.exports.dateToStr = dateToStr;
 
 function dateStrDiff(date1, date2) {
   /** Get the difference, in whole days, between two date strings.
-   * E.g. `dateStrDiff('2021-04-16', '2021-04-14') === 2`
+   *  E.g. `dateStrDiff('2021-04-16', '2021-04-14') === 2`
    */
   let date1date = new Date(date1);
   let date2date = new Date(date2);
@@ -108,6 +110,62 @@ function spaceTab(rawStr, tabWidth=8) {
   return rawStr.padEnd(tabStop);
 }
 module.exports.spaceTab = spaceTab;
+
+function rmPathPrefix(path, depth, absolute=null) {
+  let inputIsAbsolute = path.startsWith("/");
+  if (inputIsAbsolute) {
+    depth++;
+  }
+  if (absolute === null) {
+    absolute = inputIsAbsolute;
+  }
+  let fields = path.split("/");
+  let newPath = fields.slice(depth).join("/");
+  if (absolute) {
+    return "/"+newPath;
+  } else {
+    return newPath;
+  }
+}
+module.exports.rmPathPrefix = rmPathPrefix;
+
+function getFilesDeep(rootDir) {
+  /**
+   * Find all the children of `rootDir`.
+   * Arguments:
+   *   `rootDir` (`String`): An absolute or relative path of a directory.
+   * Returns:
+   *   `files` (`Array`): An array of paths relative to the same directory as the `rootDir`.
+   *     Returns only the paths to files (tested by `isFile()`).
+   */
+  let files = [];
+  let children = fs.readdirSync(rootDir, {withFileTypes: true});
+  for (let child of children) {
+    let childPath = path.join(rootDir,child.name)
+    if (child.isDirectory()) {
+      let descendents = getFilesDeep(childPath);
+      files = files.concat(descendents);
+    } else if (child.isFile()) {
+      files.push(childPath);
+    }
+  }
+  return files;
+}
+module.exports.getFilesDeep = getFilesDeep;
+
+function getFilesShallow(dirPath, excludeExt=null) {
+  let files = [];
+  let children = fs.readdirSync(dirPath, {withFileTypes: true});
+  for (let child of children) {
+    if (child.isFile()) {
+      if (excludeExt === null || path.parse(child.name).ext !== excludeExt) {
+        files.push(child.name);
+      }
+    }
+  }
+  return files;
+}
+module.exports.getFilesShallow = getFilesShallow;
 
 function describeObject(obj, indent='', maxWidth=100) {
   for (let [name, value] of Object.entries(obj)) {

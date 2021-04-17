@@ -6,7 +6,7 @@
 
 const nodePath = require('path');
 const fs = require('fs');
-const { rmPrefix, rmSuffix } = require('./src/utils.js');
+const { rmPrefix, rmSuffix, rmPathPrefix } = require('./src/utils.js');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
@@ -59,23 +59,6 @@ function getIgnorePath(urlPath) {
   return nodePath.join('*/', '*/'.repeat(depth), '**/*.md');
 }
 
-function rmPathPrefix(path, depth, absolute=null) {
-  let inputIsAbsolute = path.startsWith("/");
-  if (inputIsAbsolute) {
-    depth++;
-  }
-  if (absolute === null) {
-    absolute = inputIsAbsolute;
-  }
-  let fields = path.split("/");
-  let newPath = fields.slice(depth).join("/");
-  if (absolute) {
-    return "/"+newPath;
-  } else {
-    return newPath;
-  }
-}
-
 function makeFilenamePath(prefix, node) {
   let directory = rmPathPrefix(node.fileInfo.directory, 1, absolute=false);
   let path;
@@ -107,6 +90,13 @@ module.exports = {
       slug: true,
       autolinkHeadings: true,
       plugins: ['remark-attr'],
+    }
+  },
+  // This was required to solve an error thrown by importing `fs` into `src/util.js`.
+  // https://github.com/nuxt-community/dotenv-module/issues/11#issuecomment-619958699
+  configureWebpack: {
+    node: {
+      fs: "empty"
     }
   },
 }
