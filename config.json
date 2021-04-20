@@ -1,5 +1,6 @@
 {
   "contentDir": "content",
+  "vueContentDir": "vue-content",
   "collections": {
     "Platform": "/use/"
   },

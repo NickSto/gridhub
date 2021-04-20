@@ -2,30 +2,40 @@
   <Layout>
     <g-link to="/" class="link"> &larr; Home</g-link>
     <header>
-      <g-image v-if="this.$page.article.image" class="img-fluid main-image"
-        :src="getImage(this.$page.article.image)" />
+      <g-image v-if="$page.article.image" class="img-fluid main-image"
+        :src="getImage($page.article.image)" />
       <h1 class="title">{{ $page.article.title }}</h1>
-      <div class="metadata">
+      <section class="metadata">
         <p class="subtitle" v-if="$page.article.tease">{{ $page.article.tease }}</p>
-        <div class="contact" v-if="$page.article.contact">
+        <p class="contact" v-if="$page.article.contact">
           Contact: {{ $page.article.contact }}
-        </div>
+        </p>
         <p class="date" v-if="$page.article.date">{{ $page.article.date }}</p>
-      </div>
+      </section>
     </header>
-    <div class="content" v-html="$page.article.content" />
+    <article class="content">
+      <VueRemarkContent>
+        <template v-for="insert of $page.article.inserts" v-slot:[insert.name]>
+          <p :key="insert.name" v-html="mdToHtml(insert.content)" />
+        </template>
+      </VueRemarkContent>
+    </article>
   </Layout>
 </template>
 
 <page-query>
-query Article ($path: String!) {
-   article: article (path: $path) {
+query VueArticle($path: String!) {
+   article: vueArticle(path: $path) {
     id
     title
     tease
     image
     images
     contact
+    inserts {
+      name
+      content
+    }
     date (format: "D MMMM YYYY")
     content
   }
@@ -33,7 +43,7 @@ query Article ($path: String!) {
 </page-query>
 
 <script>
-import { getImage } from '~/utils.js';
+import { mdToHtml, getImage } from '~/utils.js';
 export default {
   metaInfo() {
     return {
@@ -41,6 +51,7 @@ export default {
     }
   },
   methods: {
+    mdToHtml,
     getImage(imagePath) {
       return getImage(imagePath, this.$page.article.images);
     }

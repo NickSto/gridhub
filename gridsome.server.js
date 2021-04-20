@@ -103,21 +103,6 @@ function processNonInsert(node, collection) {
   } else {
     node.has_date = false;
   }
-  // Find and link Inserts.
-  // Note: This is technically not a stable API, but it's unlikely to go away and there's almost no
-  // other way to do this.
-  const store = collection._store;
-  const insertCollection = store.getCollection('Insert');
-  node.inserts = [];
-  for (let insertName of findInsertsInMarkdown(node.content)) {
-    let path = `/insert:${insertName}/`;
-    let insert = insertCollection.findNode({path:path});
-    if (insert) {
-      node.inserts.push(store.createReference(insert));
-    } else {
-      console.error(`Failed to find Insert for path "${path}"`);
-    }
-  }
   return node;
 }
 
@@ -136,6 +121,27 @@ function processArticle(node, collection) {
     }
   }
   return node;
+}
+
+function processVueArticle(node, collection) {
+  if (node === null) {
+    return node;
+  }
+  // Find and link Inserts.
+  // Note: `._store` is technically not a stable API, but it's unlikely to go away and there's
+  // almost no other way to do this.
+  const store = collection._store;
+  const insertCollection = store.getCollection('Insert');
+  node.inserts = [];
+  for (let insertName of findInsertsInMarkdown(node.content)) {
+    let path = `/insert:${insertName}/`;
+    let insert = insertCollection.findNode({path:path});
+    if (insert) {
+      node.inserts.push(store.createReference(insert));
+    } else {
+      console.error(`Failed to find Insert for path "${path}"`);
+    }
+  }
 }
 
 function processInsert(node, collection) {
@@ -164,7 +170,7 @@ module.exports = function(api) {
         closed: Boolean
       }
     `);
-    let collections = (['Article']).concat(Object.keys(CONFIG['collections']));
+    let collections = (['Article', 'VueArticle']).concat(Object.keys(CONFIG['collections']));
     let schemas = {};
     for (let collection of collections) {
       schemas[collection] = {
@@ -186,12 +192,16 @@ module.exports = function(api) {
     if (typeName !== 'Insert') {
       node = processNonInsert(node, collection);
     }
-    // Articles
-    if (typeName === 'Article') {
-      node = processArticle(node, collection);
-    // Inserts
-    } else if (typeName === 'Insert') {
-      node = processInsert(node, collection);
+    switch (typeName) {
+      case 'Article':
+        node = processArticle(node, collection);
+        break;
+      case 'VueArticle':
+        node = processVueArticle(node, collection);
+        break;
+      case 'Insert':
+        node = processInsert(node, collection);
+        break;
     }
     return node;
   });

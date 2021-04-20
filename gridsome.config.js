@@ -10,9 +10,27 @@ const { rmPrefix, rmSuffix, rmPathPrefix } = require('./src/utils.js');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 
+function mkTemplates(collections) {
+  let templates = {
+    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
+    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
+  };
+  for (let name of Object.keys(collections)) {
+    templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, 1));
+  }
+  return templates;
+}
+
 function mkPlugins(collections) {
   // Path globbing rules: https://www.npmjs.com/package/globby#user-content-globbing-patterns
   let plugins = [
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: [CONFIG.contentDir+'/**/index.md'],
+        typeName: 'Article',
+      }
+    },
     {
       use: '@gridsome/source-filesystem',
       options: {
@@ -23,25 +41,28 @@ function mkPlugins(collections) {
     {
       use: '@gridsome/vue-remark',
       options: {
-        typeName: 'Article',
-        baseDir: CONFIG.contentDir,
+        typeName: 'VueArticle',
+        baseDir: CONFIG.vueContentDir,
         pathPrefix: '/',
         ignore: [],
-        template: 'src/templates/Article.vue'
+        template: 'src/templates/VueArticle.vue'
       }
     },
   ];
   for (let [name, urlPath] of Object.entries(collections)) {
     let dirPath = nodePath.join(CONFIG.contentDir, urlPath);
-    plugins[1].options.ignore.push(nodePath.join(rmPrefix(rmSuffix(urlPath,'/'),'/')));
+    let globPath = nodePath.join(dirPath, '*/index.md');
+    let articlePlugin = getPlugin(plugins, 'Article');
+    articlePlugin.options.path.push('!'+globPath);
+    let bareUrlPath = rmPrefix(rmSuffix(urlPath,'/'),'/')
+    let vueArticlePlugin = getPlugin(plugins, 'VueArticle');
+    vueArticlePlugin.options.ignore.push(bareUrlPath);
+    //TODO: Allow custom collections to use vue-remark.
     let plugin = {
-      use: '@gridsome/vue-remark',
+      use: '@gridsome/source-filesystem',
       options: {
         typeName: name,
-        baseDir: dirPath,
-        pathPrefix: urlPath,
-        ignore: [getIgnorePath(urlPath)],
-        template: nodePath.join('src/templates', name+'.vue')
+        path: globPath,
       }
     };
     plugins.push(plugin);
@@ -49,14 +70,12 @@ function mkPlugins(collections) {
   return plugins;
 }
 
-function getIgnorePath(urlPath) {
-  // Take the path for a collection and return the path for the plugin's `ignore` key.
-  // E.g. '/use/' -------> '*/*/**/*.md'
-  //      '/help/faqs/' -> '*/*/*/**/*.md'
-  // This ignore path makes sure only pages directly under the `urlPath` are included in the
-  // collection.
-  let depth = urlPath.split(nodePath.sep).length - 2;
-  return nodePath.join('*/', '*/'.repeat(depth), '**/*.md');
+function getPlugin(plugins, typeName) {
+  for (let plugin of plugins) {
+    if (plugin.options && plugin.options.typeName === typeName) {
+      return plugin;
+    }
+  }
 }
 
 function makeFilenamePath(prefix, node) {
@@ -78,9 +97,7 @@ function logAndReturn(...values) {
 module.exports = {
   siteName: 'Galaxy Community Hub: The Squeakquel',
   siteDescription: 'All about Galaxy and its community',
-  templates: {
-    Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
-  },
+  templates: mkTemplates(CONFIG['collections']),
   plugins: mkPlugins(CONFIG['collections']),
   transformers: {
     // Add markdown support to all filesystem sources
