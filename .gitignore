@@ -3,7 +3,9 @@ static
 .cache
 node_modules
 dist
-scratch
+build
+meta
+__pycache__
 src/.temp
 .env
 .env.*

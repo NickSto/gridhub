@@ -1,6 +1,5 @@
 {
   "contentDir": "content",
-  "vueContentDir": "vue-content",
   "collections": {
     "Platform": "/use/"
   },
@@ -9,6 +8,10 @@
     "/events": "events",
     "/news": "news",
     "/careers": "careers"
+  },
+  "build": {
+    "mdDir": "build/content-md",
+    "vueDir": "build/content-vue"
   },
   "redirects": {
     "/events/gtn.html": "/events/gtn/",

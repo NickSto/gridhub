@@ -48,7 +48,12 @@ function findInsertsInMarkdown(content) {
  */
 async function resolveImages(node, args, context, info) {
   let images = {};
-  let dirPath = path.join(__dirname, CONFIG.contentDir, node.path);
+  let dirPath;
+  if (node.internal.typeName === 'VueArticle') {
+    dirPath = path.join(__dirname, CONFIG.build.vueDir, node.path);
+  } else {
+    dirPath = path.join(__dirname, CONFIG.build.mdDir, node.path);
+  }
   if (! fs.existsSync(dirPath)) {
     console.error(`Directory not found: ${dirPath}`);
     return images;

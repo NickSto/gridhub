@@ -157,7 +157,9 @@ function getFilesShallow(dirPath, excludeExt=null) {
   let files = [];
   let children = fs.readdirSync(dirPath, {withFileTypes: true});
   for (let child of children) {
-    if (child.isFile()) {
+    //TODO: If it's a link, check that the target is a file.
+    //      Looks like I'll have to use `fs.readlink()` with a callback.
+    if (child.isFile() || child.isSymbolicLink()) {
       if (excludeExt === null || path.parse(child.name).ext !== excludeExt) {
         files.push(child.name);
       }

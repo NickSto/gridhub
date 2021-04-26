@@ -9,14 +9,17 @@ const fs = require('fs');
 const { rmPrefix, rmSuffix, rmPathPrefix } = require('./src/utils.js');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
+const MD_CONTENT_DIR = CONFIG.build.mdDir;
+const VUE_CONTENT_DIR = CONFIG.build.vueDir;
+const CONTENT_DIR_DEPTH = rmSuffix(MD_CONTENT_DIR,'/').split('/').length
 
 function mkTemplates(collections) {
   let templates = {
-    Article: node => logAndReturn("Article", rmPathPrefix(node.path, 1)),
+    Article: node => logAndReturn("Article", rmPathPrefix(node.path, CONTENT_DIR_DEPTH)),
     Insert: node => logAndReturn("Insert", makeFilenamePath("insert", node)),
   };
   for (let name of Object.keys(collections)) {
-    templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, 1));
+    templates[name] = node => logAndReturn(name, rmPathPrefix(node.path, CONTENT_DIR_DEPTH));
   }
   return templates;
 }
@@ -27,14 +30,14 @@ function mkPlugins(collections) {
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: [CONFIG.contentDir+'/**/index.md'],
+        path: [MD_CONTENT_DIR+'/**/index.md'],
         typeName: 'Article',
       }
     },
     {
       use: '@gridsome/source-filesystem',
       options: {
-        path: [CONFIG.contentDir+'/**/*.md', '!'+CONFIG.contentDir+'/**/index.md'],
+        path: [MD_CONTENT_DIR+'/**/*.md', '!'+MD_CONTENT_DIR+'/**/index.md'],
         typeName: 'Insert',
       }
     },
@@ -42,7 +45,7 @@ function mkPlugins(collections) {
       use: '@gridsome/vue-remark',
       options: {
         typeName: 'VueArticle',
-        baseDir: CONFIG.vueContentDir,
+        baseDir: VUE_CONTENT_DIR,
         pathPrefix: '/',
         ignore: [],
         template: 'src/templates/VueArticle.vue'
@@ -50,7 +53,7 @@ function mkPlugins(collections) {
     },
   ];
   for (let [name, urlPath] of Object.entries(collections)) {
-    let dirPath = nodePath.join(CONFIG.contentDir, urlPath);
+    let dirPath = nodePath.join(MD_CONTENT_DIR, urlPath);
     let globPath = nodePath.join(dirPath, '*/index.md');
     let articlePlugin = getPlugin(plugins, 'Article');
     articlePlugin.options.path.push('!'+globPath);
@@ -79,7 +82,7 @@ function getPlugin(plugins, typeName) {
 }
 
 function makeFilenamePath(prefix, node) {
-  let directory = rmPathPrefix(node.fileInfo.directory, 1, absolute=false);
+  let directory = rmPathPrefix(node.fileInfo.directory, CONTENT_DIR_DEPTH, absolute=false);
   let path;
   if (directory === "") {
     path = node.fileInfo.name;
