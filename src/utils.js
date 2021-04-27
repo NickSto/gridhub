@@ -12,6 +12,29 @@ const remarkHtml = require('remark-html');
  * That's the `module.exports.slugify = slugify` pattern.
  */
 
+function repr(strParts, ...values) {
+  /** Template literal tag that converts all embedded values to their literal representations.
+   *  Uses `util.inspect()` for the conversions.
+   *  Alternatively, this can be used as a (single-argument) alias for `util.inspect`.
+   *  Just call it as a regular function with one argument (E.g. `repr(obj)`).
+   */
+  if (strParts.length === undefined && values.length === 0) {
+    // Being used as a util.inspect alias.
+    return util.inspect(strParts);
+  }
+  let outParts = [];
+  for (let i = 0; i < strParts.length || i < values.length; i++) {
+    if (i < strParts.length) {
+      outParts.push(strParts[i]);
+    }
+    if (i < values.length) {
+      outParts.push(util.inspect(values[i]));
+    }
+  }
+  return outParts.join('');
+}
+module.exports.repr = repr;
+
 function slugify(string) {
   return string.toLowerCase().replace(/[^\w\d -]/g, '').replace(/[ -]+/g,'-');
 }
@@ -44,7 +67,11 @@ function getImage(imagePath, images) {
   }
   let fields = imagePath.split("/");
   let filename = fields[fields.length-1];
-  return images[filename];
+  let assetPath = images[filename];
+  if (! assetPath) {
+    console.error(repr`Image ${filename} not found in asset store.`);
+  }
+  return assetPath;
 }
 module.exports.getImage = getImage;
 

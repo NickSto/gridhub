@@ -9,7 +9,7 @@ import sys
 import graymatter
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
-DESCRIPTION = """"""
+DESCRIPTION = """Copy or link the content files into the right build directories."""
 
 
 def make_argparser():
@@ -59,7 +59,7 @@ def place_files(src_content_dir, md_content_dir, vue_content_dir, simulate=True)
   for src_file_path in get_all_files(src_content_dir):
     if src_file_path.name == 'index.md' and file_requires_vue(src_file_path):
       place_content_file('copy', src_file_path, src_content_dir, vue_content_dir, simulate)
-      link_resource_files(src_file_path.parent, src_content_dir, vue_content_dir, simulate)
+      place_resource_files(src_file_path.parent, src_content_dir, vue_content_dir, simulate)
     else:
       place_content_file('link', src_file_path, src_content_dir, md_content_dir, simulate)
 
@@ -116,9 +116,9 @@ def place_content_file(action, src_file_path, src_content_dir, dst_content_dir, 
       os.symlink(link_path, dst_file_path)
 
 
-def link_resource_files(src_file_dir, src_content_dir, dst_content_dir, simulate=True):
+def place_resource_files(src_file_dir, src_content_dir, dst_content_dir, simulate=True):
   for file_path in src_file_dir.iterdir():
-    if file_path.is_file():
+    if file_path.is_file() and file_path.suffix != '.md':
       place_content_file('link', file_path, src_content_dir, dst_content_dir, simulate=simulate)
 
 

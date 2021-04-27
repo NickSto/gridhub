@@ -8,11 +8,12 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
-const { rmPrefix, rmSuffix, dateToStr, dateStrDiff, getFilesShallow } = require('./src/utils');
+const { repr, rmPrefix, rmSuffix, dateToStr, dateStrDiff, getFilesShallow } = require('./src/utils');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 const COMPILE_DATE = dateToStr(new Date());
 
+const IMAGE_REGISTRY = new Set();
 
 function categorize(pathParts) {
   /** Take a `pathParts` made by splitting the path on `"/"` and return a category:
@@ -58,9 +59,14 @@ async function resolveImages(node, args, context, info) {
     console.error(`Directory not found: ${dirPath}`);
     return images;
   }
-  let files = getFilesShallow(dirPath, excludeExt='.md');
-  for (let file of files) {
-    let imgPath = path.join(dirPath, file);
+  let filenames = getFilesShallow(dirPath, excludeExt='.md');
+  for (let filename of filenames) {
+    let imgPath = path.join(dirPath, filename);
+    let imgLocPath = path.join(node.path, filename);
+    if (IMAGE_REGISTRY.has(imgLocPath)) {
+      console.log(repr`Image ${imgLocPath} already in asset store.`);
+      continue;
+    }
     let result;
     try {
       result = await context.assets.add(imgPath, args);
@@ -73,19 +79,19 @@ async function resolveImages(node, args, context, info) {
       imgData[attr] = result[attr];
     }
     if (result.type !== 'image') {
-      let filename = path.parse(result.filePath).base;
       let fileType = result.mimeType || 'non-image';
-      console.log(`Saw ${fileType} "${filename}"`);
+      console.log(`Saw ${fileType} ${repr(filename)}`);
       if (result.type !== 'file') {
-        console.error(`  result.type for "${filename}" is "${result.type}"`);
+        console.error(repr`  result.type for ${filename} is ${result.type}`);
       }
       continue
     }
-    if (file !== result.name+result.ext) {
-      console.error(`Error: ${file} !== ${result.name+result.ext}`);
+    if (filename !== result.name+result.ext) {
+      console.error(repr`Error: ${filename} !== ${result.name+result.ext}`);
       continue
     }
-    images[file] = imgData;
+    images[filename] = imgData;
+    IMAGE_REGISTRY.add(imgLocPath);
   }
   return images;
 }
@@ -147,7 +153,7 @@ class nodeModifier {
         if (insert) {
           node.inserts.push(store.createReference(insert));
         } else {
-          console.error(`Failed to find Insert for path "${path}"`);
+          console.error(repr`Failed to find Insert for path ${path}`);
         }
       }
       return node;
