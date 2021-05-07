@@ -6,6 +6,7 @@ import os
 import pathlib
 import shutil
 import sys
+
 import graymatter
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -40,12 +41,16 @@ def main(argv):
 
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  handler = EventHandler(args.config, project_root=PROJECT_ROOT, simulate=args.simulate)
+  preprocess(args.config, project_root=PROJECT_ROOT, simulate=args.simulate)
 
+
+def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True):
+  handler = EventHandler(config_path, project_root=project_root, simulate=simulate)
+  # Make sure the build directories exist.
   for dir_path in handler.build_dirs.values():
-    if not args.simulate:
+    if not simulate:
       dir_path.mkdir(parents=True, exist_ok=True)
-
+  # Arrange the content in the build directories.
   handler.place_dir_files(handler.content_dir, recursive=True)
 
 
@@ -195,7 +200,8 @@ class EventHandler:
       # If the file already exists, only overwrite if the source file was last modified later than
       # the existing file.
       #TODO: Check if this makes a big speed difference.
-      if not dst_file_path.exists() or os.path.getmtime(src_file_path) > os.path.getmtime(dst_file_path):
+      if (not dst_file_path.exists() or dst_file_path.is_symlink() or
+          os.path.getmtime(src_file_path) > os.path.getmtime(dst_file_path)):
         logging.info(f'copy {src_file_path} -> {dst_file_path}')
         if not self.simulate:
           shutil.copy2(src_file_path, dst_file_path)

@@ -8,9 +8,10 @@ import sys
 
 import psutil
 
-import preprocess
+import partition_content
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+VERBOSITY_ARGS = {logging.DEBUG:'--debug', logging.INFO:'--verbose', logging.CRITICAL:'--quiet'}
 DESCRIPTION = """Build or serve the site."""
 
 
@@ -55,9 +56,15 @@ def main(argv):
   if args.check_args:
     return
 
-  preprocess.preprocess(args.config)
-
   os.chdir(PROJECT_ROOT)
+
+  logging.warning('Running partition_content.py..')
+  partition_content.preprocess(args.config)
+
+  if args.action == 'develop':
+    logging.warning('Starting hot reloader..')
+    verbosity = VERBOSITY_ARGS[logging.getLogger().getEffectiveLevel()]
+    subprocess.Popen([PROJECT_ROOT/'scripts/hotreloader.py', verbosity, args.config])
 
   node_mem = get_node_mem(reserved=args.reserved_mem)
   os.environ['NODE_OPTIONS'] = f'--max-old-space-size={node_mem}'
