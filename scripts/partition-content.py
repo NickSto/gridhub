@@ -40,36 +40,240 @@ def main(argv):
 
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  with args.config.open() as config_file:
-    config = json.load(config_file)
+  handler = EventHandler(args.config, project_root=PROJECT_ROOT, simulate=args.simulate)
 
-  md_content_dir = PROJECT_ROOT/config['build']['mdDir']
-  vue_content_dir = PROJECT_ROOT/config['build']['vueDir']
-  for dir_path in (md_content_dir, vue_content_dir):
+  for dir_path in handler.build_dirs.values():
     if not args.simulate:
       dir_path.mkdir(parents=True, exist_ok=True)
-      clear_directory(dir_path)
 
-  place_files(PROJECT_ROOT/config['contentDir'], md_content_dir, vue_content_dir, args.simulate)
-
-  #TODO: Hot-reloading. Watch content directory and update any files that change.
+  handler.place_dir_files(handler.content_dir, recursive=True)
 
 
-def place_files(src_content_dir, md_content_dir, vue_content_dir, simulate=True):
-  for src_file_path in get_all_files(src_content_dir):
-    if src_file_path.name == 'index.md' and file_requires_vue(src_file_path):
-      place_content_file('copy', src_file_path, src_content_dir, vue_content_dir, simulate)
-      place_resource_files(src_file_path.parent, src_content_dir, vue_content_dir, simulate)
+class EventHandler:
+
+  def __init__(self, config_path, project_root=PROJECT_ROOT, simulate=True):
+    self.simulate = simulate
+    with config_path.open() as config_file:
+      config = json.load(config_file)
+    self.content_dir = project_root/config['contentDir']
+    md_content_dir = project_root/config['build']['mdDir']
+    vue_content_dir = project_root/config['build']['vueDir']
+    self.build_dirs = {'md':md_content_dir, 'vue':vue_content_dir}
+
+  @property
+  def md_content_dir(self):
+    return self.build_dirs['md']
+
+  @property
+  def vue_content_dir(self):
+    return self.build_dirs['vue']
+
+  def place_dir_files(self, dir_path, recursive=False):
+    dirs, index_path, inserts, resources = get_children_by_type(dir_path)
+    if recursive:
+      # Execute depth-first - take care of bottom-most directories before their parents.
+      for child_dir in dirs:
+        self.place_dir_files(child_dir, recursive=recursive)
+    plan = self.make_dir_plan(index_path, inserts, resources)
+    self.execute_dir_plan(dir_path, plan)
+    if recursive:
+      # Delete empty directories.
+      # Because we've taken care of the child directories already (recursively), everything below
+      # should already be in the intended final state.
+      delete_empty_dirs(dir_path)
+
+  def make_dir_plan(self, index_path, inserts, resources):
+    """Determine what the final state of the files in this directory should be.
+    What files should be present in which destination directories, and should they be links or
+    copies?"""
+    plan = {'links':[], 'copies':[]}
+    vue = index_path and file_requires_vue(index_path)
+    # index.md
+    if index_path is None:
+      pass
+    elif vue:
+      plan['copies'].append({'path':index_path, 'dest':'vue'})
     else:
-      place_content_file('link', src_file_path, src_content_dir, md_content_dir, simulate)
+      plan['links'].append({'path':index_path, 'dest':'md'})
+    # Insert .md files
+    for insert_path in inserts:
+      plan['links'].append({'path':insert_path, 'dest':'md'})
+    # Resource files (mainly images)
+    for resource_file in resources:
+      # Check if the file is used by a Vue-requiring Markdown file.
+      #TODO: It's possible a file could be referenced by multiple Markdowns in the same directory.
+      #TODO: This is a very loose check for whether the Markdown file references the resource file.
+      #      The Markdown file could technically include the name of the resource file without
+      #      actually including it in, say, an image element.
+      if vue and file_contains_substr(index_path, resource_file.name):
+        destination = 'vue'
+      else:
+        destination = 'md'
+      plan['links'].append({'path':resource_file, 'dest':destination})
+    return plan
+
+  def execute_dir_plan(self, dir_path, plan):
+    """Create the state described in the `plan` in the directory given with `dir_path`.
+    Delete files not present in the final state.
+    Directories are not touched."""
+    child_paths = {'vue':set(), 'md':set()}
+    for action in plan['links']:
+      child_paths[action['dest']].add(action['path'].relative_to(self.content_dir))
+      self.place_content_file('link', action['path'], self.build_dirs[action['dest']])
+    for action in plan['copies']:
+      child_paths[action['dest']].add(action['path'].relative_to(self.content_dir))
+      self.place_content_file('copy', action['path'], self.build_dirs[action['dest']])
+    rel_dir = dir_path.relative_to(self.content_dir)
+    for content_type, build_dir_root in self.build_dirs.items():
+      build_dir = build_dir_root/rel_dir
+      if build_dir.is_dir():
+        build_dir_contents = list(build_dir.iterdir())
+      elif build_dir.exists():
+        raise OSError(f'Path {build_dir} exists but is not a directory.')
+      else:
+        build_dir_contents = ()
+      for child_path in build_dir_contents:
+        if child_path.is_dir():
+          # Directories are handled outside this function.
+          continue
+        rel_path = child_path.relative_to(build_dir_root)
+        if rel_path not in child_paths[content_type]:
+          os.remove(child_path)
+
+  def handle(self, event_type, is_dir, path, old_path=None):
+    dirs_to_check = {'deep':[], 'shallow':[]}
+    if event_type == 'created':
+      if is_dir:
+        dirs_to_check['deep'].append(path)
+      else:
+        # If it's a Markdown file, that could affect where its directory should be placed in the
+        # build. If it's a resource file, we have to check the Markdown files in that directory to
+        # tell where it should be placed.
+        dirs_to_check['shallow'].append(path.parent)
+    elif event_type == 'deleted':
+      self.delete_from_build(path)
+      if not is_dir and path.suffix.lower() == '.md':
+        # It's a Markdown file, so removing it could affect where its directory should be in the
+        # build.
+        dirs_to_check['shallow'].append(path.parent)
+    elif event_type == 'moved':
+      if is_dir:
+        # It's a directory. We don't know where its children belong, so just delete it from the
+        # build and do a full examination of it and its children.
+        self.delete_from_build(old_path)
+        dirs_to_check['deep'].append(path)
+      elif path.suffix.lower() == '.md' or old_path.suffix.lower() == '.md':
+        # It's a Markdown file, so putting it somewhere else could affect where its directory should
+        # be placed in the build. (But it won't affect the child directories.)
+        dirs_to_check['shallow'].append(old_path.parent)
+        dirs_to_check['shallow'].append(path.parent)
+      else:
+        # It's a non-Markdown file. Can't affect anything else so just move that one file.
+        self.build_mv(old_path, path)
+    elif event_type == 'modified':
+      # Events that modify directories are usually changes to its contents. These are handled by
+      # events on the files themselves. Other directory changes, like permissions, aren't covered.
+      if not is_dir:
+        dirs_to_check['shallow'].append(path.parent)
+    for dir_path in dirs_to_check['shallow']:
+      self.place_dir_files(dir_path)
+    for dir_path in dirs_to_check['deep']:
+      self.place_dir_files(dir_path, recursive=True)
+
+  def place_content_file(self, action, src_file_path, dst_content_dir):
+    rel_file_path = src_file_path.relative_to(self.content_dir)
+    dst_file_path = dst_content_dir/rel_file_path
+    if dst_file_path.exists():
+      logging.debug(f'{dst_file_path} already exists')
+      return
+    dst_file_dir = dst_file_path.parent
+    dst_file_dir.mkdir(parents=True, exist_ok=True)
+    if dst_file_path.exists() and not dst_file_path.is_file():
+      logging.error(f'Error: Path already exists but is not a file: {dst_file_path}')
+      return
+    if action == 'copy':
+      # If the file already exists, only overwrite if the source file was last modified later than
+      # the existing file.
+      #TODO: Check if this makes a big speed difference.
+      if not dst_file_path.exists() or os.path.getmtime(src_file_path) > os.path.getmtime(dst_file_path):
+        logging.info(f'copy {src_file_path} -> {dst_file_path}')
+        if not self.simulate:
+          shutil.copy2(src_file_path, dst_file_path)
+    elif action == 'link':
+      link_path = pathlib.Path(os.path.relpath(src_file_path, start=dst_file_dir))
+      logging.info(f'link {dst_file_path} -> {link_path}')
+      if not self.simulate:
+        # If it already exists, overwrite it, to make sure the link points to the right file.
+        if dst_file_path.exists():
+          os.remove(dst_file_path)
+        os.symlink(link_path, dst_file_path)
+
+  def delete_from_build(self, path):
+    rel_path = path.relative_to(self.content_dir)
+    for build_dir in self.build_dirs.values():
+      build_path = build_dir/rel_path
+      existed = True
+      if build_path.is_symlink() or build_path.is_file():
+        if not self.simulate:
+          os.remove(build_path)
+      elif build_path.is_dir():
+        if not self.simulate:
+          shutil.rmtree(build_path)
+      elif build_path.exists():
+        raise OSError(f'Cannot remove special file {build_path}')
+      else:
+        existed = False
+      if existed:
+        logging.info(f'rm {build_path}')
+        if not self.simulate:
+          delete_empty_dirs(build_path.parent)
+
+  def build_mv(self, old_path, new_path):
+    old_rel = old_path.relative_to(self.content_dir)
+    new_rel = new_path.relative_to(self.content_dir)
+    for build_dir in self.build_dirs.values():
+      old_build_path = build_dir/old_rel
+      new_build_path = build_dir/new_rel
+      if old_build_path.exists():
+        logging.info(f'mv {old_build_path} -> {new_build_path}')
+        if not self.simulate:
+          os.renames(old_build_path, new_build_path)
 
 
-def get_all_files(root_dir, ext=None):
-  for (dirpath_str, dirnames, filenames) in os.walk(root_dir):
-    for filename in filenames:
-      file_path = pathlib.Path(dirpath_str,filename)
-      if ext is None or file_path.suffix == ext:
-        yield file_path
+def get_children_by_type(dir_path):
+  dirs = []
+  index_path = None
+  inserts = []
+  resources = []
+  for child_path in dir_path.iterdir():
+    if child_path.is_dir():
+      dirs.append(child_path)
+    elif child_path.is_file():
+      if child_path.name.lower() == 'index.md':
+        index_path = child_path
+      elif child_path.suffix.lower() == '.md':
+        inserts.append(child_path)
+      else:
+        resources.append(child_path)
+    else:
+      logging.warning(f'Warning: Special file found: {child_path}')
+  return dirs, index_path, inserts, resources
+
+
+def delete_empty_dirs(dir_path):
+  """Delete any empty directories in the tree rooted at `dir_path`, including `dir_path`."""
+  for child_path in dir_path.iterdir():
+    if child_path.is_dir():
+      delete_empty_dirs(child_path)
+  # Iterdirs again because the above loop might've deleted some.
+  if not list(dir_path.iterdir()):
+    os.rmdir(dir_path)
+
+
+def file_contains_substr(file_path, substr):
+  with file_path.open() as file:
+    contents = file.read()
+  return substr in contents
 
 
 def file_requires_vue(file_path):
@@ -96,38 +300,6 @@ def file_contains_components(file_contents, components):
       if query in line:
         return True
   return False
-
-
-def place_content_file(action, src_file_path, src_content_dir, dst_content_dir, simulate=True):
-  rel_file_path = src_file_path.relative_to(src_content_dir)
-  dst_file_path = dst_content_dir/rel_file_path
-  if dst_file_path.exists():
-    logging.debug(f'{dst_file_path} already exists')
-    return
-  dst_file_dir = dst_file_path.parent
-  dst_file_dir.mkdir(parents=True, exist_ok=True)
-  if action == 'copy':
-    logging.info(f'copy {src_file_path} -> {dst_file_path}')
-    shutil.copy2(src_file_path, dst_file_path)
-  elif action == 'link':
-    link_path = pathlib.Path(os.path.relpath(src_file_path, start=dst_file_dir))
-    logging.info(f'link {dst_file_path} -> {link_path}')
-    if not simulate:
-      os.symlink(link_path, dst_file_path)
-
-
-def place_resource_files(src_file_dir, src_content_dir, dst_content_dir, simulate=True):
-  for file_path in src_file_dir.iterdir():
-    if file_path.is_file() and file_path.suffix != '.md':
-      place_content_file('link', file_path, src_content_dir, dst_content_dir, simulate=simulate)
-
-
-def clear_directory(dir_path):
-  for child_path in dir_path.iterdir():
-    if child_path.is_dir():
-      shutil.rmtree(child_path)
-    else:
-      os.remove(child_path)
 
 
 def fail(message):
