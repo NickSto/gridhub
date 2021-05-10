@@ -5,9 +5,9 @@ import os
 import pathlib
 import subprocess
 import sys
-
+# Third party packages
 import psutil
-
+# Local modules
 import partition_content
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -24,6 +24,9 @@ def make_argparser():
   options.add_argument('-c', '--config', type=pathlib.Path, default=PROJECT_ROOT/'config.json',
     help='The site configuration file. The location of the important directories will be read from '
       'here. Default: %(default)s')
+  options.add_argument('-m', '--node-mem', type=float,
+    help='How much memory to allow node to take (the --max-old-space-size option). By default, '
+      'this will be calculated from the total system memory minus the --reserved-mem.')
   options.add_argument('-M', '--reserved-mem', type=float, default=1,
     help='The amount of memory to reserve for the system. The limit given to node will be the '
       'total amount of system memory minus this many gigabytes. Default: %(default)s')
@@ -63,10 +66,13 @@ def main(argv):
 
   if args.action == 'develop':
     logging.warning('Starting hot reloader..')
-    verbosity = VERBOSITY_ARGS[logging.getLogger().getEffectiveLevel()]
-    subprocess.Popen([PROJECT_ROOT/'scripts/hotreloader.py', verbosity, args.config])
+    command = add_verbosity([PROJECT_ROOT/'scripts/hotreloader.py', args.config])
+    subprocess.Popen(command)
 
-  node_mem = get_node_mem(reserved=args.reserved_mem)
+  if args.node_mem:
+    node_mem = args.node_mem
+  else:
+    node_mem = get_node_mem(reserved=args.reserved_mem)
   os.environ['NODE_OPTIONS'] = f'--max-old-space-size={node_mem}'
   logging.warning(f'Using {node_mem} MB memory limit for node.')
 
@@ -77,6 +83,16 @@ def main(argv):
       subprocess.run(['gridsome', 'develop'])
     except KeyboardInterrupt:
       pass
+
+
+def add_verbosity(orig_command):
+  log_level = logging.getLogger().getEffectiveLevel()
+  verbosity = VERBOSITY_ARGS.get(log_level)
+  if verbosity is None:
+    new_command = orig_command
+  else:
+    new_command = [orig_command[0], verbosity, *orig_command[1:]]
+  return new_command
 
 
 def get_node_mem(reserved=1):

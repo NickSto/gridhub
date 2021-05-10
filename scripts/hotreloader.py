@@ -5,10 +5,10 @@ import logging
 import pathlib
 import sys
 import time
-
+# Third party packages
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
+# Local modules
 import partition_content
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
