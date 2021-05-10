@@ -62,7 +62,7 @@ def main(argv):
   os.chdir(PROJECT_ROOT)
 
   logging.warning('Running partition_content.py..')
-  partition_content.preprocess(args.config)
+  partition_content.preprocess(args.config, project_root=PROJECT_ROOT, simulate=False)
 
   if args.action == 'develop':
     logging.warning('Starting hot reloader..')
