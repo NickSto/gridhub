@@ -6,6 +6,38 @@ It contains no static content, only dynamically generated pages. To add content,
 
 The framework does contain all the dynamic pages used by the [galaxy-hub](/galaxyproject/galaxy-hub). These can serve as examples or just be deleted. See the explanation of [dynamic pages](#creating-dynamic-pages) below.
 
+## Getting started
+
+First, you'll want to install the Gridsome command line tool:
+\- These examples will use `yarn`, but there are equivalent commands for `npm`.
+```sh
+$ yarn global add @gridsome/cli
+```
+
+You can get the site running locally by first cloning this repo:
+```sh
+$ git clone 'https://github.com/NickSto/gridhub.git'
+```
+
+Then install the dependencies:
+```sh
+$ cd gridhub
+$ yarn install
+```
+
+Then you'll have to create a `content` directory in the root of the repo and create some initial pages. See the [Creating static pages](#creating-static-pages) section below for details.
+
+Then you can build the site in development mode to run it in a local server (at http://localhost:8080) and see your content:
+```sh
+$ scripts/build.sh develop
+```
+
+To generate the static files for the entire site, you just run `build.sh` without the `develop` argument:
+```sh
+$ scripts/build.sh
+```
+The static files can then be found in the `dist` directory.
+
 ## Creating static pages
 
 ### File organization
