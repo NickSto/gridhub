@@ -44,8 +44,8 @@ def main(argv):
   preprocess(args.config, project_root=PROJECT_ROOT, simulate=args.simulate)
 
 
-def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True):
-  handler = EventHandler(config_path, project_root=project_root, simulate=simulate)
+def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True, placers=None):
+  handler = EventHandler(config_path, project_root=project_root, simulate=simulate, placers=placers)
   # Make sure the build directories exist.
   for dir_path in handler.build_dirs.values():
     if not simulate:
@@ -54,9 +54,33 @@ def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True):
   handler.place_dir_files(handler.content_dir, recursive=True)
 
 
+# Placers
+# Each must take 3 arguments: source path, destination path, and `simulate`.
+
+def copy(src_file_path, dst_file_path, simulate=True):
+  # If the file already exists, only overwrite if the source file was last modified later than
+  # the existing file.
+  #TODO: Check if this makes a big speed difference.
+  if (not dst_file_path.exists() or dst_file_path.is_symlink() or
+      os.path.getmtime(src_file_path) > os.path.getmtime(dst_file_path)):
+    logging.info(f'copy {src_file_path} -> {dst_file_path}')
+    if not simulate:
+      shutil.copy2(src_file_path, dst_file_path)
+
+
+def link(src_file_path, dst_file_path, simulate=True):
+  link_path = pathlib.Path(os.path.relpath(src_file_path, start=dst_file_path.parent))
+  logging.info(f'link {dst_file_path} -> {link_path}')
+  if not simulate:
+    # If it already exists, overwrite it, to make sure the link points to the right file.
+    if dst_file_path.exists():
+      os.remove(dst_file_path)
+    os.symlink(link_path, dst_file_path)
+
+
 class EventHandler:
 
-  def __init__(self, config_path, project_root=PROJECT_ROOT, simulate=True):
+  def __init__(self, config_path, project_root=PROJECT_ROOT, simulate=True, placers=None):
     self.simulate = simulate
     with config_path.open() as config_file:
       config = json.load(config_file)
@@ -64,6 +88,9 @@ class EventHandler:
     md_content_dir = project_root/config['build']['mdDir']
     vue_content_dir = project_root/config['build']['vueDir']
     self.build_dirs = {'md':md_content_dir, 'vue':vue_content_dir}
+    self.placers = {'md':link, 'vue':copy, 'insert':link, 'resource':link}
+    if placers is not None:
+      self.placers.update(placers)
 
   @property
   def md_content_dir(self):
@@ -91,18 +118,18 @@ class EventHandler:
     """Determine what the final state of the files in this directory should be.
     What files should be present in which destination directories, and should they be links or
     copies?"""
-    plan = {'links':[], 'copies':[]}
+    plan = []
     vue = index_path and file_requires_vue(index_path)
     # index.md
     if index_path is None:
       pass
     elif vue:
-      plan['copies'].append({'path':index_path, 'dest':'vue'})
+      plan.append({'path':index_path, 'dest':'vue', 'method':self.placers['vue']})
     else:
-      plan['links'].append({'path':index_path, 'dest':'md'})
+      plan.append({'path':index_path, 'dest':'md', 'method':self.placers['md']})
     # Insert .md files
     for insert_path in inserts:
-      plan['links'].append({'path':insert_path, 'dest':'md'})
+      plan.append({'path':insert_path, 'dest':'md', 'method':self.placers['insert']})
     # Resource files (mainly images)
     for resource_file in resources:
       # Check if the file is used by a Vue-requiring Markdown file.
@@ -114,7 +141,7 @@ class EventHandler:
         destination = 'vue'
       else:
         destination = 'md'
-      plan['links'].append({'path':resource_file, 'dest':destination})
+      plan.append({'path':resource_file, 'dest':destination, 'method':self.placers['resource']})
     return plan
 
   def execute_dir_plan(self, dir_path, plan):
@@ -122,12 +149,9 @@ class EventHandler:
     Delete files not present in the final state.
     Directories are not touched."""
     child_paths = {'vue':set(), 'md':set()}
-    for action in plan['links']:
+    for action in plan:
       child_paths[action['dest']].add(action['path'].relative_to(self.content_dir))
-      self.place_content_file('link', action['path'], self.build_dirs[action['dest']])
-    for action in plan['copies']:
-      child_paths[action['dest']].add(action['path'].relative_to(self.content_dir))
-      self.place_content_file('copy', action['path'], self.build_dirs[action['dest']])
+      self.place_content_file(action['method'], action['path'], self.build_dirs[action['dest']])
     rel_dir = dir_path.relative_to(self.content_dir)
     for content_type, build_dir_root in self.build_dirs.items():
       build_dir = build_dir_root/rel_dir
@@ -185,7 +209,7 @@ class EventHandler:
     for dir_path in dirs_to_check['deep']:
       self.place_dir_files(dir_path, recursive=True)
 
-  def place_content_file(self, action, src_file_path, dst_content_dir):
+  def place_content_file(self, method, src_file_path, dst_content_dir):
     rel_file_path = src_file_path.relative_to(self.content_dir)
     dst_file_path = dst_content_dir/rel_file_path
     if dst_file_path.exists():
@@ -196,23 +220,7 @@ class EventHandler:
     if dst_file_path.exists() and not dst_file_path.is_file():
       logging.error(f'Error: Path already exists but is not a file: {dst_file_path}')
       return
-    if action == 'copy':
-      # If the file already exists, only overwrite if the source file was last modified later than
-      # the existing file.
-      #TODO: Check if this makes a big speed difference.
-      if (not dst_file_path.exists() or dst_file_path.is_symlink() or
-          os.path.getmtime(src_file_path) > os.path.getmtime(dst_file_path)):
-        logging.info(f'copy {src_file_path} -> {dst_file_path}')
-        if not self.simulate:
-          shutil.copy2(src_file_path, dst_file_path)
-    elif action == 'link':
-      link_path = pathlib.Path(os.path.relpath(src_file_path, start=dst_file_dir))
-      logging.info(f'link {dst_file_path} -> {link_path}')
-      if not self.simulate:
-        # If it already exists, overwrite it, to make sure the link points to the right file.
-        if dst_file_path.exists():
-          os.remove(dst_file_path)
-        os.symlink(link_path, dst_file_path)
+    method(src_file_path, dst_file_path, self.simulate)
 
   def delete_from_build(self, path):
     rel_path = path.relative_to(self.content_dir)
