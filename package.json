@@ -13,8 +13,13 @@
     "@gridsome/vue-remark": "^0.2.6",
     "bootstrap": "^4.6.0",
     "gridsome": "^0.7.0",
+    "rehype-parse": "^7.0.1",
     "remark": "^13.0.0",
-    "remark-attr": "^0.11.1"
+    "remark-attr": "^0.11.1",
+    "remark-frontmatter": "^3.0.0",
+    "remark-parse": "^9.0.0",
+    "unified-args": "^8.1.0",
+    "unist-util-visit": "^3.1.0"
   },
   "devDependencies": {
     "node-sass": "^5.0.0",
