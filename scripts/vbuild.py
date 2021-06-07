@@ -9,6 +9,7 @@ import sys
 import psutil
 # Local modules
 import partition_content
+import mdfixer
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 VERBOSITY_ARGS = {logging.DEBUG:'--debug', logging.INFO:'--verbose', logging.CRITICAL:'--quiet'}
@@ -18,12 +19,17 @@ DESCRIPTION = """Build or serve the site."""
 def make_argparser():
   parser = argparse.ArgumentParser(prog='build.sh', add_help=False, description=DESCRIPTION)
   options = parser.add_argument_group('Options')
-  options.add_argument('action', choices=('build','develop'), default='build', nargs='?',
+  options.add_argument('action', choices=('build','develop','preprocess'), default='build', nargs='?',
     help='Action. "build" creates the static files for the entire website. "develop" runs a server '
-      'which serves the site locally (and builds pages on demand).')
+      'which serves the site locally (and builds pages on demand). "preprocess" only sets up the '
+      'build directory, but exits before executing the Gridsome build process.')
   options.add_argument('-c', '--config', type=pathlib.Path, default=PROJECT_ROOT/'config.json',
     help='The site configuration file. The location of the important directories will be read from '
       'here. Default: %(default)s')
+  options.add_argument('-L', '--copy-markdown', action='store_true',
+    help='Copy all Markdown files into the build directory instead of linking them.')
+  options.add_argument('-f', '--fix-markdown', action='store_true',
+    help='Modify Markdown files before copying them into the build directories.')
   options.add_argument('-m', '--node-mem', type=float,
     help='How much memory to allow node to take (the --max-old-space-size option). By default, '
       'this will be calculated from the total system memory minus the --reserved-mem.')
@@ -61,8 +67,17 @@ def main(argv):
 
   os.chdir(PROJECT_ROOT)
 
+  if args.fix_markdown:
+    placers = {'md':mdfixer.fix, 'vue':mdfixer.fix, 'insert':mdfixer.fix}
+  elif args.copy_markdown:
+    placers = {'md':partition_content.copy, 'insert':partition_content.copy}
+  else:
+    placers = None
+
   logging.warning('Running partition_content.py..')
-  partition_content.preprocess(args.config, project_root=PROJECT_ROOT, simulate=False)
+  partition_content.preprocess(
+    args.config, project_root=PROJECT_ROOT, simulate=False, placers=placers
+  )
 
   if args.action == 'develop':
     logging.warning('Starting hot reloader..')
