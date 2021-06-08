@@ -1,28 +1,50 @@
 #!/usr/bin/env python3
 """Small Python hook for mdfixer.mjs."""
 import argparse
+import json
 import logging
 import pathlib
 import subprocess
 import sys
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+
+def prepare_command(exe=None, verbose=False):
+  if exe is None:
+    exe = SCRIPT_DIR/'mdfixer.mjs'
+  command = [exe]
+  if not verbose:
+    command.append('-q')
+  return command
 
 
 # Compatible with "placer" interface of `partition_content.EventHandler`.
-def fix(old_path, new_path=None, simulate=True, exe=None, verbose=False):
-  if exe is None:
-    exe = SCRIPT_DIR/'mdfixer.mjs'
+def fix_file(old_path, new_path=None, simulate=True, exe=None, verbose=False):
   if new_path is None:
     new_path = old_path
-  if verbose:
-    verbosity_args = []
-  else:
-    verbosity_args = ['-q']
-  command = [exe, old_path, *verbosity_args, '-o', new_path]
-  logging.info(f'Fix markdown of {old_path}, write to {new_path}')
+  command = prepare_command(exe=exe, verbose=verbose)
+  command += [old_path, '-o', new_path]
+  logging.info(f'Fixing markdown of {old_path}, writing to {new_path}')
   if not simulate:
     subprocess.run(command)
+
+
+def fix_dir(dir_path, simulate=True, exe=None, verbose=False):
+  command = prepare_command(exe=exe, verbose=verbose)
+  command += [dir_path, '-o']
+  logging.info(f'Fixing markdown of all files in {dir_path}')
+  if not simulate:
+    subprocess.run(command)
+
+
+def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True):
+  with config_path.open() as config_file:
+    config = json.load(config_file)
+  for key in 'mdDir', 'vueDir':
+    content_dir = project_root/config['build'][key]
+    fix_dir(content_dir, simulate=simulate)
 
 
 def make_argparser():
@@ -41,7 +63,7 @@ def make_argparser():
 def main(argv):
   parser = make_argparser()
   args = parser.parse_args(argv[1:])
-  fix(args.input, new_path=args.output, exe=args.exe)
+  fix_file(args.input, new_path=args.output, exe=args.exe)
 
 
 if __name__ == '__main__':

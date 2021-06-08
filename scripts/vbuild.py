@@ -26,8 +26,6 @@ def make_argparser():
   options.add_argument('-c', '--config', type=pathlib.Path, default=PROJECT_ROOT/'config.json',
     help='The site configuration file. The location of the important directories will be read from '
       'here. Default: %(default)s')
-  options.add_argument('-L', '--copy-markdown', action='store_true',
-    help='Copy all Markdown files into the build directory instead of linking them.')
   options.add_argument('-f', '--fix-markdown', action='store_true',
     help='Modify Markdown files before copying them into the build directories.')
   options.add_argument('-m', '--node-mem', type=float,
@@ -68,9 +66,9 @@ def main(argv):
   os.chdir(PROJECT_ROOT)
 
   if args.fix_markdown:
-    placers = {'md':mdfixer.fix, 'vue':mdfixer.fix, 'insert':mdfixer.fix}
-  elif args.copy_markdown:
-    placers = {'md':partition_content.copy, 'insert':partition_content.copy}
+    placers = {
+      'md':partition_content.copy, 'vue':partition_content.copy, 'insert':partition_content.copy
+    }
   else:
     placers = None
 
@@ -78,6 +76,9 @@ def main(argv):
   partition_content.preprocess(
     args.config, project_root=PROJECT_ROOT, simulate=False, placers=placers
   )
+  if args.fix_markdown:
+    logging.warning('Running mdfixer.py..')
+    mdfixer.preprocess(args.config, project_root=PROJECT_ROOT, simulate=False)
 
   if args.action == 'develop':
     logging.warning('Starting hot reloader..')
