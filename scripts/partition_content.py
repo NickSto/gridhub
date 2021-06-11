@@ -309,7 +309,7 @@ def file_requires_vue(file_path):
 
 def file_contains_components(file_contents, components):
   query_strings = [f'<{tag} ' for tag in components]
-  for line in file_contents:
+  for line in file_contents.splitlines():
     for query in query_strings:
       if query in line:
         return True
