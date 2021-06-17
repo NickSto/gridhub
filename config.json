@@ -10,8 +10,10 @@
     "/careers": "careers"
   },
   "build": {
-    "mdDir": "build/content-md",
-    "vueDir": "build/content-vue"
+    "dirs": {
+      "md": "build/content-md",
+      "vue": "build/content-vue"
+    }
   },
   "redirects": {
     "/events/gtn.html": "/events/gtn/",

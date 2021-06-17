@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import logging
 import pathlib
 import sys
-import time
 # Third party packages
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 # Local modules
 import partition_content
+import vbuild
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DESCRIPTION = """Watch for changes made to the content and take care of the steps necessary before
@@ -42,8 +41,7 @@ def main(argv):
 
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  with args.config.open() as config_file:
-    config = json.load(config_file)
+  config = vbuild.read_config(args.config)
   content_dir = PROJECT_ROOT/config['contentDir']
 
   subhandlers = []

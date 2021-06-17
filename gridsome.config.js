@@ -9,8 +9,8 @@ const fs = require('fs');
 const { rmPrefix, rmSuffix, rmPathPrefix } = require('./src/utils.js');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
-const MD_CONTENT_DIR = CONFIG.build.mdDir;
-const VUE_CONTENT_DIR = CONFIG.build.vueDir;
+const MD_CONTENT_DIR = CONFIG.build.dirs.md;
+const VUE_CONTENT_DIR = CONFIG.build.dirs.vue;
 const CONTENT_DIR_DEPTH = rmSuffix(MD_CONTENT_DIR,'/').split('/').length
 
 function mkTemplates(collections) {

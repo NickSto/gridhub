@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Small Python hook for mdfixer.mjs."""
 import argparse
-import json
 import logging
 import pathlib
 import subprocess
 import sys
+# Local modules
+import vbuild
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -40,11 +41,9 @@ def fix_dir(dir_path, simulate=True, exe=None, verbose=False):
 
 
 def preprocess(config_path, project_root=PROJECT_ROOT, simulate=True):
-  with config_path.open() as config_file:
-    config = json.load(config_file)
-  for key in 'mdDir', 'vueDir':
-    content_dir = project_root/config['build'][key]
-    fix_dir(content_dir, simulate=simulate)
+  config = vbuild.read_config(config_path)
+  for build_dir in config['build']['dirs'].values():
+    fix_dir(build_dir, simulate=simulate)
 
 
 def make_argparser():

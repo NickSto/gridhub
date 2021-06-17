@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import logging
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 # Third party packages
@@ -26,6 +28,8 @@ def make_argparser():
   options.add_argument('-c', '--config', type=pathlib.Path, default=PROJECT_ROOT/'config.json',
     help='The site configuration file. The location of the important directories will be read from '
       'here. Default: %(default)s')
+  options.add_argument('-K', '--keep-old-build', dest='clean', action='store_false', default=True,
+    help="Keep the existing build files instead of wiping out the build directories first.")
   options.add_argument('-f', '--fix-markdown', action='store_true',
     help='Modify Markdown files before copying them into the build directories.')
   options.add_argument('-m', '--node-mem', type=float,
@@ -63,6 +67,8 @@ def main(argv):
   if args.check_args:
     return
 
+  config = read_config(args.config)
+
   os.chdir(PROJECT_ROOT)
 
   if args.fix_markdown:
@@ -71,6 +77,9 @@ def main(argv):
     }
   else:
     placers = None
+
+  if args.clean:
+    clean_build_dirs(config)
 
   logging.warning('Running partition_content.py..')
   partition_content.preprocess(
@@ -84,6 +93,7 @@ def main(argv):
     logging.warning('Starting hot reloader..')
     command = add_verbosity([PROJECT_ROOT/'scripts/hotreloader.py', args.config])
     subprocess.Popen(command)
+    #TODO: Also start mdfixer.mjs in watch mode for the two build directories.
 
   if args.node_mem:
     node_mem = args.node_mem
@@ -101,6 +111,12 @@ def main(argv):
       pass
 
 
+def clean_build_dirs(config):
+  for build_dir in config['build']['dirs'].values():
+    if os.path.exists(build_dir):
+      shutil.rmtree(build_dir)
+
+
 def add_verbosity(orig_command):
   log_level = logging.getLogger().getEffectiveLevel()
   verbosity = VERBOSITY_ARGS.get(log_level)
@@ -116,6 +132,11 @@ def get_node_mem(reserved=1):
   It's the total amount of system memory minus `reserved` GB."""
   mem = psutil.virtual_memory()
   return round(mem.total/1024/1024 - reserved*1024)
+
+
+def read_config(config_path):
+  with config_path.open() as config_file:
+    return json.load(config_file)
 
 
 def fail(message):

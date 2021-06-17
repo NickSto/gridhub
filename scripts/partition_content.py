@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import logging
 import os
 import pathlib
@@ -8,6 +7,7 @@ import shutil
 import sys
 # Local modules
 import graymatter
+import vbuild
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DESCRIPTION = """Copy or link the content files into the right build directories."""
@@ -81,13 +81,12 @@ def link(src_file_path, dst_file_path, simulate=True):
 class EventHandler:
 
   def __init__(self, config_path, project_root=PROJECT_ROOT, simulate=True, placers=None):
+    config = vbuild.read_config(config_path)
     self.simulate = simulate
-    with config_path.open() as config_file:
-      config = json.load(config_file)
     self.content_dir = project_root/config['contentDir']
-    md_content_dir = project_root/config['build']['mdDir']
-    vue_content_dir = project_root/config['build']['vueDir']
-    self.build_dirs = {'md':md_content_dir, 'vue':vue_content_dir}
+    self.build_dirs = {}
+    for key, rel_dir in config['build']['dirs'].items():
+      self.build_dirs[key] = project_root/rel_dir
     self.placers = {'md':link, 'vue':copy, 'insert':link, 'resource':link}
     if placers is not None:
       self.placers.update(placers)
