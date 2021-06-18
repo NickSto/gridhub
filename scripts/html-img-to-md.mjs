@@ -44,7 +44,6 @@ function replaceImgs(rootNode, index, parent) {
   if (globals.limit && globals.visits > globals.limit) {
     return;
   }
-  let replacements = [];
   let html = rootNode.value;
   let dom = htmlParser.parse(html);
   let imgElems = findImgElems(dom);
@@ -54,44 +53,41 @@ function replaceImgs(rootNode, index, parent) {
   //TODO: Sorting may not be necessary, but I'd have to verify that `findImgElems` always returns
   //      them in the right order.
   imgElems.sort((elem1, elem2) => elem1.position.start.offset - elem2.position.start.offset);
-  let wrappedImgs = false;
-  let lastImgEnd = 0;
+  // Only handle cases where the HTML is composed solely of `<img>` elements.
+  // This avoids invalid HTML generated when this produces lone lines containing HTML with tags that
+  // close elements opened in earlier lines. Markdown parsers enclose these lone lines with `<p>`
+  // tags which interrupt the open elements and create tag soup.
+  //TODO: Handle more complex cases.
+  if (! containsOnlyImgs(imgElems, html.length)) {
+    return null;
+  }
+  let replacements = [];
   for (let imgElem of imgElems) {
-    // If there's HTML before the `<img>`, cut it out and add it as a new node right before.
-    // This could also be a bit of HTML in-between multiple `<img>`s.
-    let fragment = html.slice(lastImgEnd, imgElem.position.start.offset);
-    if (fragment !== '') {
-      //TODO: Might want to include position information.
-      //      That would be valid, since this is from the actual input document.
-      replacements.push({type:'html', value:fragment});
-    }
     // Replace the `<img>` itself with as many nodes as `convertImg()` decides is necessary.
     let imgElemReplacements = convertImg(imgElem);
-    if (imgElemReplacements.length > 1) {
-      wrappedImgs = true;
-    }
     imgElemReplacements.forEach(node => replacements.push(node));
-    lastImgEnd = imgElem.position.end.offset;
-  }
-  // If there's trailing HTML after the last `<img>`, add it as a node at the end.
-  let fragment = html.slice(lastImgEnd);
-  if (fragment !== '') {
-    replacements.push({type:'html', value:fragment});
   }
   // Replace the original node with the new set of nodes.
   parent.children.splice(index, 1, ...replacements);
-  /* If this line starts with an `<img>` (and isn't just `<img>`s), the replacement output
-   * (single-line `<div>![](img)</div>`) will be parsed as a single `html` blob and the image
-   * Markdown won't be parsed as Markdown.
-   * This is avoided if there's any text (or inline HTML element) preceding the `<div>`. So here we
-   * "fix" it by prepending a single, zero width space character.
+}
+
+function containsOnlyImgs(imgElems, htmlLength) {
+  /** Does this HTML fragment contain only `<img>` elements?
+   * `imgElems`: The `<img>` elements parsed from the HTML using `rehype-parse`
+   *   (the output of `findImgElems()`).
+   * `htmlLength`: The length of the HTML string parsed by `rehype-parse`.
    */
-  if (
-    imgElems[0].position.start.offset === 0 && index === 0 && parent.type === 'paragraph' &&
-    parent.children.length > imgElems.length && wrappedImgs
-  ) {
-    parent.children.unshift({type:'text', value:'\u200b', leadingImageKludge:true});
+  let lastImgEnd = 0;
+  for (let imgElem of imgElems) {
+    if (imgElem.position.start.offset !== lastImgEnd) {
+      return false;
+    }
+    lastImgEnd = imgElem.position.end.offset;
   }
+  if (lastImgEnd !== htmlLength) {
+    return false;
+  }
+  return true;
 }
 
 function findImgElems(elem) {
