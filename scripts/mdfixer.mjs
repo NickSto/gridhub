@@ -23,6 +23,9 @@ program
     +'working on a single input file, not a directory.'
   )
   .option('--inspect', 'Output formatted syntax tree.')
+  .option('-l, --limit <limit>', 'Only process this many html nodes in the <img> replacer.',
+    l => parseInt(l)
+  )
   .action(main);
 program.parse(process.argv);
 
@@ -32,7 +35,7 @@ function main(inputPath, opts) {
     base = opts.base;
   } else if (opts.output === true) {
     base = inputPath;
-  } else {
+  } else if (opts.quiet !== true) {
     console.error(`No base identified. Can't fix relative img src paths unless a --base is given.`);
   }
   removeExtraArgs(process.argv);
@@ -44,7 +47,7 @@ function main(inputPath, opts) {
   const processor = unified()
     .use(remarkParse)
     .use(keepNewlineBeforeHtml)
-    .use(htmlImgToMd, {base:base})
+    .use(htmlImgToMd, {base:base, limit:opts.limit})
     .use(remarkFrontmatter, {type:'yaml', marker:'-'})
     .use(remarkStringify, REMARK_STRINGIFY_OPTIONS);
 
@@ -63,7 +66,7 @@ function main(inputPath, opts) {
 
 function removeExtraArgs(argv) {
   // Options that take arguments.
-  for (let arg of ['-b', '--base']) {
+  for (let arg of ['-b', '--base', '-l', '--limit']) {
     let i = argv.indexOf(arg);
     if (i >= 0) {
       argv.splice(i, 2)

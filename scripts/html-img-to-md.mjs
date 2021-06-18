@@ -8,7 +8,7 @@ import hastUtilToHtml from 'hast-util-to-html';
 import { visit } from 'unist-util-visit';
 
 const htmlParser = unified().use(rehypeParse, {fragment:true});
-const globals = {};
+const globals = {visits:0, limit:null};
 
 export default function(options) {
   if (options === undefined) {
@@ -17,6 +17,7 @@ export default function(options) {
   // Implement the Transformer interface:
   // https://github.com/unifiedjs/unified#function-transformernode-file-next
   function transformer(tree, file) {
+    globals.limit = options.limit;
     globals.filePathRaw = file.path;
     if (options.base) {
       let filePath = getRelFilePath(file.cwd, globals.filePathRaw, options.base);
@@ -39,6 +40,10 @@ function getRelFilePath(cwd, rawPath, base) {
 
 function replaceImgs(rootNode, index, parent) {
   // `rootNode` is an `mdast` node of type `html`. Figure out if it contains an `<img>`.
+  globals.visits++;
+  if (globals.limit && globals.visits > globals.limit) {
+    return;
+  }
   let replacements = [];
   let html = rootNode.value;
   let dom = htmlParser.parse(html);
