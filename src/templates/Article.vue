@@ -48,6 +48,16 @@ export default {
 }
 </script>
 
+<style>
+.img-sizer img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.img-sizer p {
+  height: 100%;
+}
+</style>
+
 <style scoped>
 .main-image {
   float: right;
@@ -70,12 +80,5 @@ export default {
 }
 .content {
   font-size: 14px;
-}
-.img-sizer img {
-  max-width: 100%;
-  max-height: 100%;
-}
-.img-sizer p {
-  height: 100%;
 }
 </style>
