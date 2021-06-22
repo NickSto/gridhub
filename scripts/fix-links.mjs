@@ -7,16 +7,19 @@
 import nodePath from 'path';
 import unified from 'unified';
 import rehypeParse from 'rehype-parse';
-import hastUtilToHtml from 'hast-util-to-html';
 import { visit } from "unist-util-visit";
 import { rmPrefix, rmSuffix } from '../src/utils.js';
 
+// `verbose: true` makes the parser include position information for each property of each element.
+// This is required for `editProperty()` to work.
 const htmlParser = unified().use(rehypeParse, {fragment:true, verbose:true});
 const globals = {};
 // Prefixes that denote that the path is absolute and does not need altering.
 //TODO: How about urls that begin with a domain but no protocol?
 const PREFIX_WHITELIST = ['http://', 'https://', 'mailto:', '/images/', '//', '#'];
 const DUMMY_DOMAIN = 'http://dummy.test';
+const LINK_PROPS = {img:'src', a:'href'};
+const LINK_FIXERS = {img:fixImageLink, a:fixHyperLink};
 
 export default function(options) {
   if (options === undefined) {
@@ -53,47 +56,57 @@ function getRelFilePath(cwd, rawPath, base) {
 }
 
 function fixHtmlLinks(node, index, parent) {
+  let html = node.value;
   let dom = htmlParser.parse(node.value);
-  fixImgElemLinks(dom);
-  fixAElemLinks(dom);
-  node.value = hastUtilToHtml(dom);
-}
-
-function fixAElemLinks(dom) {
-  /** Fix all the `href` urls in all `<a>` elements in the given `hast` tree. */
-  let aElems = getElementsByTagName(dom, 'a');
-  for (let aElem of aElems) {
-    if (aElem.properties.href) {
-      aElem.properties.href = fixHyperLink(aElem.properties.href);
+  let elems = getElementsByTagNames(dom, ['a','img']);
+  // Sort the list of elements in reverse order of where they appear in the `html` string.
+  // If we didn't process elements in reverse order, then the offsets of elements later in the
+  // string would become invalid after we replace elements earlier in the string.
+  elems.sort((elem1, elem2) => elem2.position.start.offset - elem1.position.start.offset);
+  for (let elem of elems) {
+    let propName = LINK_PROPS[elem.tagName];
+    let url = elem.properties[propName];
+    if (!url) {
+      continue;
     }
-  }
-}
-
-function fixImgElemLinks(dom) {
-  /** Fix all the `src` urls in all `<img>` elements in the given `hast` tree. */
-  let imgElems = getElementsByTagName(dom, 'img');
-  for (let imgElem of imgElems) {
-    if (imgElem.properties.src) {
-      imgElem.properties.src = fixImageLink(imgElem.properties.src);
+    let newUrl = LINK_FIXERS[elem.tagName](url);
+    if (url == newUrl) {
+      continue;
     }
+    html = editProperty(html, elem, propName, newUrl);
   }
+  node.value = html;
 }
 
-function getElementsByTagName(elem, tagName) {
+function editProperty(htmlStr, elem, propName, value) {
+  /** Replace the value of HTML property `propName` in `elem` with the value `value` by directly
+   *  editing `htmlStr`.
+   *  Note: This requires `elem` to be parsed from `htmlStr` using `rehype-parse` with `verbose` set
+   *  to `true`.
+   */
+  // Note: This does not check if there are double-quotes in `value`.
+  // That would result in invalid HTML.
+  let propData = elem.data.position.properties[propName];
+  let prefix = htmlStr.slice(0, propData.start.offset);
+  let replacement = `${propName}="${value}"`;
+  let suffix = htmlStr.slice(propData.end.offset);
+  return prefix + replacement + suffix;
+}
+
+function getElementsByTagNames(elem, tagNames) {
   /** Find all the elements of a given type in a `hast` tree rooted at `elem`.
    * NOTE: `elem` should be of type `element` or `root`. This does not check that.
    */
-  if (elem.tagName === tagName) {
-    return [elem];
-  } else {
-    let results = [];
-    for (let child of elem.children) {
-      if (child.type === 'element') {
-        results = results.concat(getElementsByTagName(child, tagName));
-      }
-    }
-    return results;
+  let results = [];
+  if (tagNames.indexOf(elem.tagName) >= 0) {
+    results.push(elem);
   }
+  for (let child of elem.children) {
+    if (child.type === 'element') {
+      results = results.concat(getElementsByTagNames(child, tagNames));
+    }
+  }
+  return results;
 }
 
 function fixHyperLink(rawUrl) {
