@@ -37,7 +37,9 @@ function categorize(pathParts) {
 function findInsertsInMarkdown(content) {
   /** Parse Markdown content and extract the names of all inserts in `<slot>`s. */
   //TODO: Replace this monstrosity with actual Markdown parsing.
-  let matches = Array.from(content.matchAll(/<slot\s*name=["']?([^"']+)["']?\s*\/>/ig));
+  //      Or do this in the preprocessing steps where we parse it all anyway.
+  //      Could just add an "inserts" key to the yaml header.
+  let matches = Array.from(content.matchAll(/<slot\s*name=["']?([^"']+)["']?\s*\/?>/ig));
   return matches.map(match => match[1]);
 }
 

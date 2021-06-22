@@ -1,14 +1,13 @@
 /* This replaces raw `<img>` tags with Markdown `![image](syntax.jpg)`, preserving attributes and
  * styling as much as possible.
  */
-import nodePath from 'path';
 import unified from 'unified';
 import rehypeParse from 'rehype-parse';
 import hastUtilToHtml from 'hast-util-to-html';
 import { visit } from 'unist-util-visit';
 
 const htmlParser = unified().use(rehypeParse, {fragment:true});
-const globals = {visits:0, limit:null};
+const globals = {visits:0};
 
 export default function(options) {
   if (options === undefined) {
@@ -18,28 +17,13 @@ export default function(options) {
   // https://github.com/unifiedjs/unified#function-transformernode-file-next
   function transformer(tree, file) {
     globals.limit = options.limit;
-    globals.filePathRaw = file.path;
-    if (options.base) {
-      let filePath = getRelFilePath(file.cwd, globals.filePathRaw, options.base);
-      globals.dirPath = nodePath.dirname(filePath);
-    }
     visit(tree, 'html', replaceImgs);
   }
   return transformer
 }
 
-function getRelFilePath(cwd, rawPath, base) {
-  // Get the path to the file at `rawPath` relative to the root directory `base`.
-  if (nodePath.isAbsolute(base)) {
-    let absPath = nodePath.join(cwd, rawPath);
-    return nodePath.relative(base, absPath);
-  } else {
-    return nodePath.relative(base, rawPath);
-  }
-}
-
 function replaceImgs(rootNode, index, parent) {
-  // `rootNode` is an `mdast` node of type `html`. Figure out if it contains an `<img>`.
+  // `rootNode` is an `mdast` node of type `html`.
   globals.visits++;
   if (globals.limit && globals.visits > globals.limit) {
     return;
@@ -111,7 +95,7 @@ function convertImg(img) {
   let imgMd = {
     type: 'image',
     title: img.properties.title || null,
-    url: fixSrc(img.properties.src),
+    url: img.properties.src,
     alt: img.properties.alt,
     // `position` intentionally omitted: it should not be included for generated nodes:
     // https://github.com/syntax-tree/unist#position
@@ -220,37 +204,4 @@ function stringifyStyles(styles) {
     styleStrs.push(`${key}: ${value}`);
   }
   return styleStrs.join(';')
-}
-
-
-function fixSrc(rawSrc) {
-  if (rawSrc.indexOf('http://') === 0 || rawSrc.indexOf('https://') === 0) {
-    // External links
-    return rawSrc;
-  } else if (rawSrc.indexOf('/src/images') === 0) {
-    // Links to the static directory.
-    return rawSrc.slice(4);
-  } else if (globals.dirPath) {
-    // All other links.
-    // Remove any `/src` prefix and find a relative path from this page to the image.
-    let src;
-    if (rawSrc.indexOf('/src/') === 0) {
-      src = rawSrc.slice(4);
-    } else {
-      src = rawSrc;
-    }
-    let relSrc;
-    if (nodePath.isAbsolute(src)) {
-      relSrc = nodePath.relative('/'+globals.dirPath, src);
-    } else {
-      relSrc = src;
-    }
-    if (relSrc[0] !== '/' && relSrc[0] !== '.') {
-      relSrc = './'+relSrc;
-    }
-    return relSrc;
-  } else {
-    // We don't know the url of this page. Just return the src as-is.
-    return rawSrc;
-  }
 }
