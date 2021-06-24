@@ -58,7 +58,7 @@ module.exports.dateStrDiff = dateStrDiff;
 
 function getImage(imagePath, images) {
   if (! imagePath) {
-    return null;
+    return imagePath;
   }
   if (startswith(imagePath,"/src/images/")) {
     return imagePath.substring(4);
@@ -70,6 +70,7 @@ function getImage(imagePath, images) {
   let assetPath = images[filename];
   if (! assetPath) {
     console.error(repr`Image ${filename} not found in asset store.`);
+    return imagePath;
   }
   return assetPath;
 }
