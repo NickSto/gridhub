@@ -1,6 +1,9 @@
 <template>
   <Layout>
-    <g-link to="/" class="link"> &larr; Home</g-link>
+    <g-link v-if="$page.article.category" :to="`/${$page.article.category}/`" class="link">
+      &larr; {{ $page.article.category }}
+    </g-link>
+    <g-link v-else to="/" class="link"> &larr; Home</g-link>
     <header>
       <g-image v-if="this.$page.article.image" class="img-fluid main-image"
         :src="getImage(this.$page.article.image)" />
@@ -25,6 +28,7 @@ query Article ($path: String!) {
     tease
     image
     images
+    category
     contact
     date (format: "D MMMM YYYY")
     content
