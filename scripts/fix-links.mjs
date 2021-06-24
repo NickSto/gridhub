@@ -16,8 +16,9 @@ const htmlParser = unified().use(rehypeParse, {fragment:true, verbose:true});
 const globals = {};
 // Prefixes that denote that the path is absolute and does not need altering.
 //TODO: How about urls that begin with a domain but no protocol?
+//      Check if that happens in the codebase.
 const PREFIX_WHITELIST = ['http://', 'https://', 'mailto:', '/images/', '//', '#'];
-const DUMMY_DOMAIN = 'http://dummy.test';
+const DUMMY_DOMAIN = 'http://dummy.invalid';
 const LINK_PROPS = {img:'src', a:'href'};
 const LINK_FIXERS = {img:fixImageLink, a:fixHyperLink};
 
@@ -112,6 +113,11 @@ function getElementsByTagNames(elem, tagNames) {
 function fixHyperLink(rawUrl) {
   /** Perform all the editing appropriate for a hyperlink url (whether in HTML or Markdown). */
   // Full parsing is needed to take care of situations like a trailing url #fragment.
+  for (let prefix of PREFIX_WHITELIST) {
+    if (rawUrl.indexOf(prefix) === 0) {
+      return rawUrl;
+    }
+  }
   let urlObj = new URL(rawUrl, DUMMY_DOMAIN);
   urlObj.pathname = rmSuffix(rmPrefix(urlObj.pathname, '/src'), 'index.md');
   let url = rmPrefix(urlObj.href, DUMMY_DOMAIN);
