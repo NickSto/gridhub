@@ -36,4 +36,15 @@ query {
 .text-nowrap {
   white-space: nowrap !important;
 }
+.markdown .img-sizer img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.markdown .img-sizer p {
+  height: 100%;
+}
+.markdown .trim-p p {
+  padding: 0;
+  margin: 0;
+}
 </style>

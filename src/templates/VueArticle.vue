@@ -4,7 +4,7 @@
     <header>
       <g-image v-if="$page.article.image" class="img-fluid main-image"
         :src="getImage($page.article.image)" />
-      <h1 class="title">{{ $page.article.title }}</h1>
+      <h1 class="title" v-if="! $page.article.skip_title_render">{{ $page.article.title }}</h1>
       <section class="metadata">
         <p class="subtitle" v-if="$page.article.tease">{{ $page.article.tease }}</p>
         <p class="contact" v-if="$page.article.contact">
@@ -13,7 +13,7 @@
         <p class="date" v-if="$page.article.date">{{ $page.article.date }}</p>
       </section>
     </header>
-    <article class="content">
+    <article class="content markdown">
       <VueRemarkContent>
         <template v-for="insert of $page.article.inserts" v-slot:[insert.name]>
           <p :key="insert.name" v-html="mdToHtml(insert.content)" />
@@ -29,6 +29,7 @@ query VueArticle($path: String!) {
     id
     title
     tease
+    skip_title_render
     image
     images
     contact

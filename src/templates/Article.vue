@@ -13,7 +13,7 @@
         <p class="date" v-if="$page.article.date">{{ $page.article.date }}</p>
       </div>
     </header>
-    <div class="content" v-html="$page.article.content" />
+    <div class="content markdown" v-html="$page.article.content" />
   </Layout>
 </template>
 
@@ -47,16 +47,6 @@ export default {
   }
 }
 </script>
-
-<style>
-.img-sizer img {
-  max-width: 100%;
-  max-height: 100%;
-}
-.img-sizer p {
-  height: 100%;
-}
-</style>
 
 <style scoped>
 .main-image {
