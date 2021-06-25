@@ -36,9 +36,13 @@ query {
 .text-nowrap {
   white-space: nowrap !important;
 }
-.markdown .img-sizer img {
+.markdown img {
   max-width: 100%;
   max-height: 100%;
+  object-fit: contain;
+}
+.markdown .autowidth img {
+  width: auto;
 }
 .markdown .img-sizer p {
   height: 100%;

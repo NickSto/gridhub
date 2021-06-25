@@ -176,14 +176,10 @@ query {
 }
 </page-query>
 
-<style>
-/* This won't work in a scoped style for some reason. */
-.jumbotron .markdown img {
-  max-width: 100%;
-}
-</style>
-
 <style scoped>
+.jumbotron {
+  padding-top: 2.5rem;
+}
 .jumbo-image {
   background-color: lightyellow;
   padding-top: 100px;
