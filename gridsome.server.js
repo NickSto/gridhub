@@ -8,12 +8,12 @@
 const fs = require('fs');
 const path = require('path');
 const { imageType } = require('gridsome/lib/graphql/types/image');
-const { repr, rmPrefix, rmSuffix, dateToStr, dateStrDiff, getFilesShallow } = require('./src/utils');
+const { repr, rmPrefix, rmSuffix, dateToStr, dateStrDiff, matchesPrefixes } = require('./src/utils');
 
 const CONFIG = JSON.parse(fs.readFileSync('config.json','utf8'));
 const COMPILE_DATE = dateToStr(new Date());
-
 const IMAGE_REGISTRY = new Set();
+const IMAGE_PREFIX_WHITELIST = ['images/', 'https://', 'http://'];
 
 function categorize(pathParts) {
   /** Take a `pathParts` made by splitting the path on `"/"` and return a category:
@@ -44,57 +44,83 @@ function findInsertsInMarkdown(content) {
 }
 
 // Based on https://github.com/gridsome/gridsome/issues/292#issuecomment-483347365
-/*TODO: Could actually parse the graymatter and add any images from there, no matter where
- *      they're located. Just take anything that looks like a path and check if it exists.
- *      This would be more parsimonious, avoiding adding images in the directory but not actually
- *      used, or ones already in the build b/c of a Markdown reference.
- */
 async function resolveImages(node, args, context, info) {
-  let images = {};
-  let dirPath;
-  if (node.internal.typeName === 'VueArticle') {
-    dirPath = path.join(__dirname, CONFIG.build.dirs.vue, node.path);
-  } else {
-    dirPath = path.join(__dirname, CONFIG.build.dirs.md, node.path);
+  /** Add any image found in the `image` metadata key to the asset store. */
+  if (! node.image) {
+    return {};
   }
+  let buildDir;
+  if (node.internal.typeName === 'VueArticle') {
+    buildDir = path.join(__dirname, CONFIG.build.dirs.vue);
+  } else {
+    buildDir = path.join(__dirname, CONFIG.build.dirs.md);
+  }
+  let dirPath = path.join(buildDir, node.path);
   if (! fs.existsSync(dirPath)) {
     console.error(`Directory not found: ${dirPath}`);
+    return {};
+  }
+  let relImgPath = rmPrefix(rmPrefix(node.image, '/src'), '/');
+  // Images in the static directory are already available by default.
+  // They don't need to be added to the asset store.
+  // Also, external images obviously don't need to be added.
+  if (matchesPrefixes(relImgPath, IMAGE_PREFIX_WHITELIST)) {
+    return {};
+  }
+  let candidates = [
+    path.join(dirPath, relImgPath),
+    path.join(buildDir, relImgPath),
+  ];
+  let imgPath;
+  for (let candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      imgPath = candidate;
+    }
+  }
+  if (! imgPath) {
+    console.error(repr`Image not found: ${node.image}`);
+    return {};
+  }
+  let relImgPathFromContent = path.relative(buildDir, imgPath);
+  if (IMAGE_REGISTRY.has(relImgPathFromContent)) {
+    console.log(repr`Image ${relImgPathFromContent} already in asset store.`);
+  }
+  let images = addImage(imgPath, args, context);
+  if (images) {
+    IMAGE_REGISTRY.add(relImgPathFromContent);
     return images;
+  } else {
+    return {};
   }
-  let filenames = getFilesShallow(dirPath, excludeExt='.md');
-  for (let filename of filenames) {
-    let imgPath = path.join(dirPath, filename);
-    let imgLocPath = path.join(node.path, filename);
-    if (IMAGE_REGISTRY.has(imgLocPath)) {
-      console.log(repr`Image ${imgLocPath} already in asset store.`);
-      continue;
-    }
-    let result;
-    try {
-      result = await context.assets.add(imgPath, args);
-    } catch (error) {
-      console.error(error);
-      continue;
-    }
-    let imgData = {};
-    for (let attr of ['type', 'mimeType', 'src', 'size', 'sizes', 'srcset', 'dataUri']) {
-      imgData[attr] = result[attr];
-    }
-    if (result.type !== 'image') {
-      let fileType = result.mimeType || 'non-image';
-      console.log(`Saw ${fileType} ${repr(filename)}`);
-      if (result.type !== 'file') {
-        console.error(repr`  result.type for ${filename} is ${result.type}`);
-      }
-      continue
-    }
-    if (filename !== result.name+result.ext) {
-      console.error(repr`Error: ${filename} !== ${result.name+result.ext}`);
-      continue
-    }
-    images[filename] = imgData;
-    IMAGE_REGISTRY.add(imgLocPath);
+}
+
+async function addImage(imgPath, args, context) {
+  let images = {};
+  let filename = path.basename(imgPath);
+  let result;
+  try {
+    result = await context.assets.add(imgPath, args);
+  } catch (error) {
+    console.error(error);
+    return null;
   }
+  let imgData = {};
+  for (let attr of ['type', 'mimeType', 'src', 'size', 'sizes', 'srcset', 'dataUri']) {
+    imgData[attr] = result[attr];
+  }
+  if (result.type !== 'image') {
+    let fileType = result.mimeType || 'non-image';
+    console.log(`Saw ${fileType} ${repr(filename)}`);
+    if (result.type !== 'file') {
+      console.error(repr`  result.type for ${filename} is ${result.type}`);
+    }
+    return null;
+  }
+  if (filename !== result.name+result.ext) {
+    console.error(repr`Error: ${filename} !== ${result.name+result.ext}`);
+    return null;
+  }
+  images[filename] = imgData;
   return images;
 }
 

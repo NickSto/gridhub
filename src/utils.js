@@ -89,6 +89,16 @@ function mdToHtml(md) {
 }
 module.exports.mdToHtml = mdToHtml;
 
+function matchesPrefixes(string, prefixes) {
+  for (let prefix of prefixes) {
+    if (string.indexOf(prefix) === 0) {
+      return true;
+    }
+  }
+  return false;
+}
+module.exports.matchesPrefixes = matchesPrefixes;
+
 function ensurePrefix(string, char) {
   if (string.startsWith(char)) {
     return string;

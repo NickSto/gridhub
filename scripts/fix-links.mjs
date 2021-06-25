@@ -8,7 +8,7 @@ import nodePath from 'path';
 import unified from 'unified';
 import rehypeParse from 'rehype-parse';
 import { visit } from "unist-util-visit";
-import { rmPrefix, rmSuffix } from '../src/utils.js';
+import { rmPrefix, rmSuffix, matchesPrefixes } from '../src/utils.js';
 
 // `verbose: true` makes the parser include position information for each property of each element.
 // This is required for `editProperty()` to work.
@@ -113,10 +113,8 @@ function getElementsByTagNames(elem, tagNames) {
 function fixHyperLink(rawUrl) {
   /** Perform all the editing appropriate for a hyperlink url (whether in HTML or Markdown). */
   // Full parsing is needed to take care of situations like a trailing url #fragment.
-  for (let prefix of PREFIX_WHITELIST) {
-    if (rawUrl.indexOf(prefix) === 0) {
-      return rawUrl;
-    }
+  if (matchesPrefixes(rawUrl, PREFIX_WHITELIST)) {
+    return rawUrl;
   }
   let urlObj = new URL(rawUrl, DUMMY_DOMAIN);
   urlObj.pathname = rmSuffix(rmPrefix(urlObj.pathname, '/src'), 'index.md');
