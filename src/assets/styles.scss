@@ -216,6 +216,27 @@ card-img-top {
     font-weight: 500;
 }
 
+
+/* Video: as wide as container. */
+.video-variable {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+}
+.video-variable iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Bold in Lead is hard to notice. Fix that. */
+
+.lead strong {
+    font-weight: 600;
+}
+
 /* 
    Button overrides; 
 
@@ -475,4 +496,20 @@ h6:hover .heading-anchor span:before {
 .twocol {
     column-count: 2;
     column-gap: 2rem;
+}
+
+.bg-wg-primary {
+    background-color: #6286A6 !important;
+}
+
+.bg-wg-goats {
+    background-color: #61AD90 !important;
+}
+
+.bg-wg-applied {
+    background-color: #8886b3 !important;
+}
+
+.bg-wg-all {
+    background-color: #D87E55 !important;
 }
