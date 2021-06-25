@@ -80,7 +80,7 @@ def main(argv):
     if output is None:
       output = ''
     else:
-      output = output.rstrip()+'\n'
+      output = str(output).rstrip()+'\n'
   elif args.meta:
     output = metadata
   elif args.content:
