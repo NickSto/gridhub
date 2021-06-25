@@ -47,4 +47,28 @@ query {
   padding: 0;
   margin: 0;
 }
+/* Replacement for .table and .table-striped on Markdown tables.
+ * Until we can get those classes inserted into the table elements themselves.
+ */
+.markdown table {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  color: #212529;
+  border-collapse: collapse;
+}
+.markdown thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid #bfbfbf;
+  text-align: inherit;
+}
+.markdown th, .markdown td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-top: 1px solid #bfbfbf;
+}
+/* A .table-striped specific one: */
+.markdown tbody tr:nth-of-type(2n+1) {
+  background-color: rgba(0,0,0,0.05);
+}
 </style>
