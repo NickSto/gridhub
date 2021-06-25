@@ -5,7 +5,7 @@
     </header>
     <section id="maincontainer" class="container">
       <slot/>
-      <footer class="static-footer" v-if="$static.footer" v-html="$static.footer.content" />
+      <footer class="static-footer markdown" v-if="$static.footer" v-html="$static.footer.content" />
     </section>
   </div>
 </template>

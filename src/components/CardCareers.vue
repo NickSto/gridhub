@@ -18,7 +18,7 @@
         Apply by: {{ article.closes }}
       </span>
     </p>
-    <p v-html="mdToHtml(article.summary)" />
+    <p class="markdown" v-html="mdToHtml(article.summary)" />
     <p v-if="article.contact" class="contact">
       Contact: {{ article.contact }}
     </p>

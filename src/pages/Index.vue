@@ -11,7 +11,7 @@
 
     <section class="section-content">
       <div id="splash-row">
-        <div class="col-sm-12 lead" v-html="$page.main.content" />
+        <div class="col-sm-12 lead markdown" v-html="$page.main.content" />
       </div>
 
       <div class="row">
@@ -37,7 +37,7 @@
       </div>
 
       <div class="row">
-        <div class="pseudo-card col-sm-4" v-if="$page.videos" v-html="$page.videos.content" />
+        <div class="pseudo-card col-sm-4 markdown" v-if="$page.videos" v-html="$page.videos.content" />
         <div class="pseudo-card col-sm-4">
           <h2><g-link to="/blog/"><span class="fas fa-pencil-alt"></span>Blog</g-link></h2>
           <ArticleListBrief v-for="edge in $page.blog.edges" :key="edge.node.id" :article="edge.node" />
@@ -64,7 +64,7 @@
       </div>
     </section>
 
-    <footer class="page-footer" v-if="$page.footer" v-html="$page.footer.content" />
+    <footer class="page-footer markdown" v-if="$page.footer" v-html="$page.footer.content" />
 
   </Layout>
 </template>

@@ -16,7 +16,7 @@
     <article class="content markdown">
       <VueRemarkContent>
         <template v-for="insert of $page.article.inserts" v-slot:[insert.name]>
-          <p :key="insert.name" v-html="mdToHtml(insert.content)" />
+          <p class="markdown" :key="insert.name" v-html="mdToHtml(insert.content)" />
         </template>
       </VueRemarkContent>
     </article>

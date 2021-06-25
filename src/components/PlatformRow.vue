@@ -9,7 +9,7 @@
     <td class="server">
       <a :href="platform.url">Server</a>
     </td>
-    <td class="summary" v-html="mdToHtml(platform.summary)" />
+    <td class="summary markdown" v-html="mdToHtml(platform.summary)" />
   </tr>
 </template>
 

@@ -25,14 +25,14 @@
         </tr>
         <tr>
           <th>Summary:</th>
-          <td v-html="mdToHtml($page.platform.summary)" />
+          <td class="markdown" v-html="mdToHtml($page.platform.summary)" />
         </tr>
       </tbody>
     </table>
     <template v-for="series of serieses">
       <h2 :key="series.name+':h2'">{{ series.name }}</h2>
       <ul :key="series.name+':ul'">
-        <li v-for="item in series.values" :key="item" v-html="item" />
+        <li class="markdown" v-for="item in series.values" :key="item" v-html="item" />
       </ul>
     </template>
   </Layout>

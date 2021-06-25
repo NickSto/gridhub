@@ -2,7 +2,7 @@
   <Layout>
     <template v-if="$page.main">
       <h1 class="page-title">{{ $page.main.title }}</h1>
-      <div v-html="$page.main.content" />
+      <div class="markdown" v-html="$page.main.content" />
     </template>
     <table class="table table-striped">
       <thead>
@@ -17,7 +17,7 @@
         <ArticleTableEvents v-for="edge in $page.events.edges" :key="edge.node.id" :article="edge.node" />
       </tbody>
     </table>
-    <footer class="page-footer" v-if="$page.footer" v-html="$page.footer.content" />
+    <footer class="page-footer markdown" v-if="$page.footer" v-html="$page.footer.content" />
   </Layout>
 </template>
 

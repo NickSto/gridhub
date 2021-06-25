@@ -1,7 +1,7 @@
 <template>
   <Layout>
     <h1 class="page-title">{{ $page.main.title }}</h1>
-    <div v-html="$page.main.content" />
+    <div class="markdown" v-html="$page.main.content" />
     <table class="table table-striped">
       <thead>
         <tr>
@@ -14,7 +14,7 @@
         <ArticleTableBlog v-for="edge in $page.articles.edges" :key="edge.node.id" :article="edge.node" />
       </tbody>
     </table>
-    <footer class="page-footer" v-if="$page.footer" v-html="$page.footer.content" />
+    <footer class="page-footer markdown" v-if="$page.footer" v-html="$page.footer.content" />
   </Layout>
 </template>
 
