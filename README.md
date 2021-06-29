@@ -8,7 +8,7 @@ The framework does contain all the dynamic pages used by the [galaxy-hub](/galax
 
 ## Getting started
 
-First, you'll want to install the Gridsome command line tool:
+First, you'll want to install the Gridsome command line tool:  
 \- These examples will use `yarn`, but there are equivalent commands for `npm`.
 ```sh
 $ yarn global add @gridsome/cli
@@ -53,22 +53,7 @@ For static pages (normal, informational pages), you create a directory, whose na
 
 ### Writing the Markdown
 
-You can use HTML in your `.md` files, but it's best to avoid it when possible. If you must use HTML, you'll have to keep the HTML on a separate line from the Markdown, and keep a blank line between them (on both sides). If you're struggling to get the layout you want, one trick is to surround a bit of Markdown with a `<div>` of a class that gives you the right layout, like:
-```markdown
-<div class="float-right">
-
-![alt text](./image.jpg)
-
-</div>
-```
-
-### Images
-
-You can include images in your `.md` files with the Markdown syntax shown above. If the image is a general one that'd be useful in multiple pages, you should put it in a `static/images/` directory, then reference it with an absolute path: `![galaxy logo](/images/logos/galaxy.jpg)`.
-
-If the image is a one-off that's only useful for this post, then you can just put it right in the same directory as the `index.md` file. Then reference it with a relative path: `![one-off](./oneoff.jpg)`. **Note** that the `./` is necessary!
-
-You can resize the image right in Markdown by using [remark-attr](https://www.npmjs.com/package/remark-attr) syntax. Right now, however, there's only a very limited subset of that syntax available. Basically, only the `width` attribute will work on images: `![alt text](./image.jpg){width="50"}` (the width is in pixels).
+See the [Authoring Guide](AUTHORING.md)
 
 ### Custom layouts for static pages
 
