@@ -11,3 +11,4 @@ src/.temp
 .env.*
 *.log
 .DS_Store
+.vscode

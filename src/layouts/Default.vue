@@ -47,7 +47,7 @@ query {
 .markdown .img-sizer p {
   height: 100%;
 }
-.markdown .trim-p p {
+.markdown .trim-p p, .markdown ul li p, .markdown ol li p, .markdown .btn p {
   padding: 0;
   margin: 0;
 }
